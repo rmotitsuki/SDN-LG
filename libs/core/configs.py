@@ -25,11 +25,16 @@
             'ui_port': 8080
             'controller': ryu|odl|onos
         }
+        'messagebroker':
+        {
+            'rabbitmq_host': localhost
+            'rabbitmq_port': 5672
+        }
     }
 """
 
 
-CONFIG_PATH="./conf"
+CONFIG_PATH = "../conf"
 
 
 def read_configs():
@@ -41,7 +46,8 @@ def read_configs():
     configs = dict(database=read_database_configs(),
                    modules=read_modules_configs(),
                    openflow=read_openflow_configs(),
-                   sdnlg=read_sdnlg_configs())
+                   sdnlg=read_sdnlg_configs(),
+                   messagebroker=read_messagebroker_configs())
     return configs
 
 
@@ -106,6 +112,18 @@ def read_sdnlg_configs():
     return read_file(config_file, options, dictionary)
 
 
+def read_messagebroker_configs():
+    """
+
+    Returns:
+        dictionary: Message Broker configs
+    """
+    config_file = CONFIG_PATH + '/messagebroker.conf'
+    options = ['RABBITMQ_HOST', 'RABBITMQ_PORT']
+    dictionary = {'RABBITMQ_HOST': 'localhost', 'RABBITMQ_PORT': 5672}
+    return read_file(config_file, options, dictionary)
+
+
 def read_file(config_file, options, dictionary):
     """
         Read core file and return a dictionary with all items
@@ -118,7 +136,7 @@ def read_file(config_file, options, dictionary):
     """
     line_number = 1
     try:
-        f = open(config_file, 'ro')
+        f = open(config_file, 'r')
     except Exception as error:
         print(error)
         return dictionary
@@ -127,10 +145,14 @@ def read_file(config_file, options, dictionary):
             variable, param = line.split('=')
             variable = variable.strip(' ').upper()
             param = param.strip('\n').strip(' ')
+            try:
+                param = int(param)
+            except ValueError:
+                pass
             if variable in options:
                 dictionary[variable] = param
             else:
-                print 'Option Invalid: "%s" on file %s:%s' %\
-                       (variable, config_file, line_number)
+                print('Option Invalid: "%s" on file %s:%s' %
+                      (variable, config_file, line_number))
         line_number += 1
     return dictionary
