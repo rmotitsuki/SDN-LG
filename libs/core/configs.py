@@ -34,7 +34,7 @@
 """
 
 
-CONFIG_PATH = "../conf"
+CONFIG_PATH = "./conf"
 
 
 def read_configs():
