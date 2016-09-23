@@ -7,6 +7,8 @@ confs = read_messagebroker_configs()
 
 RABBITMQ_HOST = confs['RABBITMQ_HOST']
 RABBITMQ_PORT = confs['RABBITMQ_PORT']
+EXCHANGE_CORE = confs['EXCHANGE_CORE']
+EXCHANGE_CONTROLLERS = confs['EXCHANGE_CONTROLLERS']
 
 
 class MessageBroker(object):
@@ -23,11 +25,11 @@ class MessageBroker(object):
     def __init__(self, callback, controller=True):
         self.callback = callback
         if controller:
-            self.exchange_receive = 'controllers'
-            self.exchange_send = 'core'
+            self.exchange_receive = EXCHANGE_CONTROLLERS
+            self.exchange_send = EXCHANGE_CORE
         else:
-            self.exchange_receive = 'core'
-            self.exchange_send = 'controllers'
+            self.exchange_receive = EXCHANGE_CORE
+            self.exchange_send = EXCHANGE_CONTROLLERS
         self.receive_thread = None
         self.channel = None
         self.conn = None
@@ -42,23 +44,43 @@ class MessageBroker(object):
         if self.receive_thread:
             return
 
-        self.conn = pika.BlockingConnection(pika.ConnectionParameters(
-            host=RABBITMQ_HOST,
-            port=RABBITMQ_PORT
-        ))
-        self.channel = self.conn.channel()
-        self.channel.exchange_declare(exchange=self.exchange_receive, type='fanout')
-        result = self.channel.queue_declare(exclusive=True)
-        self.queue_name = result.method.queue
-        self.channel.queue_bind(exchange=self.exchange_receive, queue=self.queue_name)
+        def connect():
+            self.conn = pika.BlockingConnection(pika.ConnectionParameters(
+                host=RABBITMQ_HOST,
+                port=RABBITMQ_PORT
+            ))
+
+        def get_channel():
+            self.channel = self.conn.channel()
+            self.channel.exchange_declare(exchange=self.exchange_receive, type='fanout')
+            result = self.channel.queue_declare(exclusive=True)
+            self.queue_name = result.method.queue
+            self.channel.queue_bind(exchange=self.exchange_receive, queue=self.queue_name)
+
+        connect()
+        get_channel()
 
         def listener():
             # Method that will be run by the thread to listen for incoming messages
-            for method_frame, properties, body in self.channel.consume(self.queue_name):
-                if self.receive_thread is None:  # Test if the thread should be stopped
+            while True:
+                try:
+                    for method_frame, properties, body in self.channel.consume(self.queue_name):
+                        if self.receive_thread is None:  # Test if the thread should be stopped
+                            self.conn.close()
+                            break
+                        msg = pickle.loads(body)
+                        self.callback(msg)  # Calls the method the user passed to treat the message
+                except (pika.exceptions.ConnectionClosed, pika.exceptions.ChannelClosed):
+                    while True:
+                        try:
+                            connect()
+                        except pika.exceptions.ConnectionClosed:
+                            pass
+                        else:
+                            break
+                    get_channel()
+                else:
                     break
-                msg = pickle.loads(body)
-                self.callback(msg)  # Calls the method the user passed to treat the message
 
         self.receive_thread = Thread(target=listener)
         self.receive_thread.start()

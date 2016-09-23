@@ -120,7 +120,12 @@ def read_messagebroker_configs():
     """
     config_file = CONFIG_PATH + '/messagebroker.conf'
     options = ['RABBITMQ_HOST', 'RABBITMQ_PORT']
-    dictionary = {'RABBITMQ_HOST': 'localhost', 'RABBITMQ_PORT': 5672}
+    dictionary = {
+        'RABBITMQ_HOST': 'localhost',
+        'RABBITMQ_PORT': 5672,
+        'EXCHANGE_CORE': 'core',
+        'EXCHANGE_CONTROLLERS': 'controllers',
+    }
     return read_file(config_file, options, dictionary)
 
 
