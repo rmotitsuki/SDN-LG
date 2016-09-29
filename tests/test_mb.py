@@ -43,13 +43,14 @@ class TestMessageBroker(unittest.TestCase):
         # Messages 5 and 6 are sent to the core
         self.core.start_receiving()
         self.controller1.start_receiving()
+        time.sleep(1)
 
         self.core.send_message('Message 1!')
 
         self.controller2.start_receiving()
+        time.sleep(1)
         self.core.send_message({'first': 'Test 1', 'second': ('now', 'a', 'tuple'), 'third': 3})
         message = Message(1, 56.7, ('a', 'b'))
-        time.sleep(10)
         self.core.send_message(message)
 
         self.controller1.stop_receiving()
@@ -70,6 +71,7 @@ class TestMessageBroker(unittest.TestCase):
 
     def test_one_consumer(self):
         self.controller1.start_receiving()
+        time.sleep(1)
 
         self.core.send_message('Message 1!')
         self.core.send_message('Message 2!')
@@ -80,6 +82,7 @@ class TestMessageBroker(unittest.TestCase):
         self.core.send_message('Message 5!')
 
         self.controller1.start_receiving()
+        time.sleep(1)
         self.core.send_message('Message 6!')
         self.core.send_message('Message 7!')
 
