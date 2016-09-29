@@ -1,5 +1,8 @@
 import dill as pickle
 import unittest, sys
+
+import time
+
 from libs.core.messagebroker import MessageBroker
 
 
@@ -40,10 +43,12 @@ class TestMessageBroker(unittest.TestCase):
         # Messages 5 and 6 are sent to the core
         self.core.start_receiving()
         self.controller1.start_receiving()
+        time.sleep(1)
 
         self.core.send_message('Message 1!')
 
         self.controller2.start_receiving()
+        time.sleep(1)
         self.core.send_message({'first': 'Test 1', 'second': ('now', 'a', 'tuple'), 'third': 3})
         message = Message(1, 56.7, ('a', 'b'))
         self.core.send_message(message)
@@ -57,14 +62,16 @@ class TestMessageBroker(unittest.TestCase):
         self.core.stop_receiving()
         self.controller2.stop_receiving()
 
-        self.assertEqual(self.core_messages, ['Message 5!', 'Message 6!'])
         self.assertEqual(self.controller1_messages,
                          ['Message 1!', {'first': 'Test 1', 'second': ('now', 'a', 'tuple'), 'third': 3}, message])
         self.assertEqual(self.controller2_messages,
                          [{'first': 'Test 1', 'second': ('now', 'a', 'tuple'), 'third': 3}, message, 'Message 4!'])
 
+        self.assertEqual(self.core_messages, ['Message 5!', 'Message 6!'])
+
     def test_one_consumer(self):
         self.controller1.start_receiving()
+        time.sleep(1)
 
         self.core.send_message('Message 1!')
         self.core.send_message('Message 2!')
@@ -75,6 +82,7 @@ class TestMessageBroker(unittest.TestCase):
         self.core.send_message('Message 5!')
 
         self.controller1.start_receiving()
+        time.sleep(1)
         self.core.send_message('Message 6!')
         self.core.send_message('Message 7!')
 
