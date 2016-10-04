@@ -1,9 +1,11 @@
 import dill as pickle
 import pika
 import time
+import logging
 from libs.core.configs import read_messagebroker_configs
 from threading import Thread
 
+logger = logging.getLogger('libs.core.messagebroker')
 confs = read_messagebroker_configs()
 
 RABBITMQ_HOST = confs['RABBITMQ_HOST']
@@ -76,11 +78,13 @@ class MessageBroker(object):
                         self.callback(msg)  # Calls the method the user passed to treat the message
                 except (pika.exceptions.ConnectionClosed, pika.exceptions.ChannelClosed, AttributeError):
                     # if the connection is closed, tries to recconect
+                    logger.debug('Connection to RabbitMQ closed')
                     while True:
                         if self.receive_thread is None:  # Test if the thread should be stopped
                             self.conn.close()
                             break
                         try:
+                            logger.debug('Trying to reconnect')
                             connect()
                         except pika.exceptions.ConnectionClosed:
                             time.sleep(WAIT_TIME)
@@ -89,9 +93,11 @@ class MessageBroker(object):
                     get_channel()
                 else:
                     break
+            logger.debug('Thread stopped')
 
         self.receive_thread = Thread(target=listener)
         self.receive_thread.start()
+        logger.debug('Thread for {} created'.format(self.exchange_receive))
 
     def stop_receiving(self):
         """
@@ -103,6 +109,7 @@ class MessageBroker(object):
             self.receive_thread = None
             # The test at the listener method is executed only after receiving a message, so we need to send a fake
             # message, that will never be treated.
+            logger.debug('Sending fake message to stop thread')
             self._send_finish_message()
 
     def _send_finish_message(self):
@@ -131,5 +138,6 @@ class MessageBroker(object):
         channel.exchange_declare(exchange=self.exchange_send, type='fanout')
         serialized = pickle.dumps(msg)
 
+        logger.debug('Sending message to {}'.format(self.exchange_send))
         channel.basic_publish(exchange=self.exchange_send, routing_key='', body=serialized)
         conn.close()
