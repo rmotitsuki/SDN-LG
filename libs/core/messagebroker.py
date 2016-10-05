@@ -46,6 +46,7 @@ class MessageBroker(object):
             port=RABBITMQ_PORT,
             credentials=credentials
         )
+        self.start_receiving()
 
     def start_receiving(self):
         """

@@ -41,10 +41,8 @@ class TestMessageBroker(unittest.TestCase):
         # Messages 2 and 3 are sent to both controllers
         # Message 4 is sent only to second controller (first has stopped receiving)
         # Messages 5 and 6 are sent to the core
-        self.core.start_receiving()
-        self.controller1.start_receiving()
         time.sleep(1)
-
+        self.controller2.stop_receiving()
         self.core.send_message('Message 1!')
 
         self.controller2.start_receiving()
