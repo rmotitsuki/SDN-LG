@@ -1,6 +1,7 @@
 import unittest, threading
 from libs.signals.signals import Signal, called_on
 
+
 packet_in = Signal()
 port_status = Signal()
 list_pkin1 = []

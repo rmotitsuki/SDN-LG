@@ -2,8 +2,9 @@ import dill as pickle
 import pika
 import time
 import logging
-from libs.core.configs import read_messagebroker_configs
 from threading import Thread
+from libs.core.configs import read_messagebroker_configs
+
 
 logger = logging.getLogger('libs.core.messagebroker')
 confs = read_messagebroker_configs()

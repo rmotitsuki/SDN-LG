@@ -115,13 +115,12 @@ def read_sdnlg_configs():
 def read_messagebroker_configs():
     """
 
-    Returns:
-        dictionary: Message Broker configs
+        Returns:
+            dictionary: Message Broker configs
     """
     config_file = CONFIG_PATH + '/messagebroker.conf'
     options = ['RABBITMQ_HOST', 'RABBITMQ_PORT', 'RABBITMQ_USER', 'RABBITMQ_PASS', 'WAIT_TIME', 'EXCHANGE_CORE',
-               'EXCHANGE_CONTROLLERS',
-    ]
+               'EXCHANGE_CONTROLLERS']
     dictionary = {
         'RABBITMQ_HOST': 'localhost',
         'RABBITMQ_PORT': 5672,
