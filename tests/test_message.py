@@ -1,6 +1,6 @@
 import unittest
 # from mock import Mock
-from libs.cal.message import Message
+from libs.cal.message import Message, Header, Body
 from libs.cal.cal import CoreCal
 
 
@@ -8,148 +8,158 @@ class TestMessageHeader(unittest.TestCase):
 
     # Test message.header.version
     def test_wrong_versions(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         my_msg_recv = msg_recv
         values = [0, 'a', -1, ""]
         for value in values:
-            my_msg_recv['header']['version'] = value
-            self.message = Message(my_msg_recv)
-            self.assertEqual(self.message.validate_header(), False)
+            my_msg_recv['version'] = value
+            self.message = Header(my_msg_recv)
+            self.assertEqual(self.message.validate(), False)
             del self.message
 
     def test_right_versions(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         my_msg_recv = msg_recv
         values = [1, '1']
         for value in values:
-            my_msg_recv['header']['version'] = value
-            self.message = Message(my_msg_recv)
-            self.assertEqual(self.message.validate_header(), True)
+            my_msg_recv['version'] = value
+            self.message = Header(my_msg_recv)
+            self.assertEqual(self.message.validate(), True)
             del self.message
 
     # Test message.header.id
     def test_wrong_ids(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         my_msg_recv = msg_recv
         values = [256, 'a', -1, ""]
         for value in values:
-            my_msg_recv['header']['id'] = value
-            self.message = Message(my_msg_recv)
-            self.assertEqual(self.message.validate_header(), False)
+            my_msg_recv['id'] = value
+            self.message = Header(my_msg_recv)
+            self.assertEqual(self.message.validate(), False)
             del self.message
 
     def test_right_ids(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         my_msg_recv = msg_recv
         values = [0, 1, '1']
         for value in values:
-            my_msg_recv['header']['id'] = value
-            self.message = Message(my_msg_recv)
-            self.assertEqual(self.message.validate_header(), True)
+            my_msg_recv['id'] = value
+            self.message = Header(my_msg_recv)
+            self.assertEqual(self.message.validate(), True)
             del self.message
 
     # Test message.header.payload
     def test_wrong_payloads(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         my_msg_recv = msg_recv
         values = [256, 'a', -1, ""]
         for value in values:
-            my_msg_recv['header']['payload'] = value
-            self.message = Message(my_msg_recv)
-            self.assertEqual(self.message.validate_header(), False)
+            my_msg_recv['payload'] = value
+            self.message = Header(my_msg_recv)
+            self.assertEqual(self.message.validate(), False)
             del self.message
 
     def test_right_payloads(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         my_msg_recv = msg_recv
         values = [0, 1, '1']
         for value in values:
-            my_msg_recv['header']['payload'] = value
-            self.message = Message(my_msg_recv)
-            self.assertEqual(self.message.validate_header(), True)
+            my_msg_recv['payload'] = value
+            self.message = Header(my_msg_recv)
+            self.assertEqual(self.message.validate(), True)
             del self.message
 
     # Test message.header.timing
     def test_wrong_timings(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         my_msg_recv = msg_recv
         values = ['a', -1, ""]
         for value in values:
-            my_msg_recv['header']['timing'] = value
-            self.message = Message(my_msg_recv)
-            self.assertEqual(self.message.validate_header(), False)
+            my_msg_recv['timing'] = value
+            self.message = Header(my_msg_recv)
+            self.assertEqual(self.message.validate(), False)
             del self.message
 
     def test_right_timings(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         my_msg_recv = msg_recv
         values = [0, 1, '1']
         for value in values:
-            my_msg_recv['header']['timing'] = value
-            self.message = Message(my_msg_recv)
-            self.assertEqual(self.message.validate_header(), True)
+            my_msg_recv['timing'] = value
+            self.message = Header(my_msg_recv)
+            self.assertEqual(self.message.validate(), True)
             del self.message
 
     # Test message.header.ipp
     def test_wrong_ipps(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         my_msg_recv = msg_recv
         values = [256, 'a', -1, "", "0.0.1.0:100000", "12.4.2:2222", "255.255.255:65535", "12.4.2.22"]
         for value in values:
-            my_msg_recv['header']['ipp'] = value
-            self.message = Message(my_msg_recv)
-            self.assertEqual(self.message.validate_header(), False)
+            my_msg_recv['ipp'] = value
+            self.message = Header(my_msg_recv)
+            self.assertEqual(self.message.validate(), False)
             del self.message
 
     def test_right_ipp(self):
-        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"}}
+        msg_recv = {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": "192.168.56.101:6633"}
         self.my_msg_recv = msg_recv
         values = ["0.0.1.0:1", "12.12.4.2:2222", "255.255.255.255:65535"]
         for value in values:
-            self.my_msg_recv['header']['ipp'] = value
-            self.message = Message(self.my_msg_recv)
-            self.assertEqual(self.message.validate_header(), True)
+            self.my_msg_recv['ipp'] = value
+            self.message = Header(self.my_msg_recv)
+            self.assertEqual(self.message.validate(), True)
             del self.message
-        print msg_recv
 
 
 class TestMessageBody(unittest.TestCase):
 
-    def setUp(self):
-        my_msg_recv = msg_recv
-
     # For default payload = 0, Test message.body.suggested_id
     def test_wrong_suggested_ids(self):
-        self.message = Message()
+        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"},
+                    "body": {"suggested_id": 1}}
+        self.my_msg_recv = msg_recv
         values = [0, 'a', -1, "", 256]
         for value in values:
-            my_msg_recv['body']['suggested_id'] = value
-            self.assertEqual(self.message.validate_body(my_msg_recv['body']), False)
+            self.my_msg_recv['body']['suggested_id'] = value
+            self.message = Body(self.my_msg_recv['header']['payload'],self.my_msg_recv['body'])
+            self.assertEqual(self.message.validate(), False)
+            del self.message
 
-    def test_rigt_suggested_ids(self):
-        self.message = Message()
-        values = [1, '1', 100, 255]
+    def test_right_suggested_ids(self):
+        msg_recv = {"header": {"version": 1, "id": 0, "payload": 1, "timing": 1, "ipp": "192.168.56.101:6633"},
+                    "body": {"suggested_id": 1}}
+        self.my_msg_recv = msg_recv
+        values = [1, '1', 100, 254]
         for value in values:
-            my_msg_recv['body']['suggested_id'] = value
-            self.assertEqual(self.message.validate_body(my_msg_recv['body']), True)
+            self.my_msg_recv['body']['suggested_id'] = value
+            self.message = Body(self.my_msg_recv['header']['payload'], self.my_msg_recv['body'])
+            self.assertEqual(self.message.validate(), True)
+            del self.message
 
     # For payload = 3, Test actions
     def test_wrong_actions(self):
-        self.message = Message(payload=3)
+        msg_recv = {"header": {"version": 1, "id": 0, "payload": 3, "timing": 1, "ipp": "192.168.56.101:6633"},
+                    "body": {"action": 1, "data": 0, "dpid": 0}}
+        self.my_msg_recv = msg_recv
         values = [0, 'a', -1, "", 256]
         for value in values:
-            my_msg_recv['body']['action'] = value
-            self.message.body.action = value
-            self.assertEqual(self.message.validate_body(my_msg_recv['body']), False)
+            self.my_msg_recv['body']['action'] = value
+            self.message = Body(self.my_msg_recv['header']['payload'], self.my_msg_recv['body'])
+            self.assertEqual(self.message.validate(), False)
+            del self.message
 
     def test_right_actions(self):
-        self.message = Message(payload=3)
+        msg_recv = {"header": {"version": 1, "id": 0, "payload": 3, "timing": 1, "ipp": "192.168.56.101:6633"},
+                    "body": {"action": 1, "data": 0, "dpid": 0}}
+        self.my_msg_recv = msg_recv
         values = ['switch_config', 'error', 'msg_received', 'entry_removed',
                   'add_entry', 'get_statistics', 'send_probe']
         for value in values:
-            self.message.body.action = value
-            my_msg_recv['body']['action'] = value
-            self.assertEqual(self.message.validate_body(my_msg_recv['body']), True)
+            self.my_msg_recv['body']['action'] = value
+            self.message = Body(self.my_msg_recv['header']['payload'], self.my_msg_recv['body'])
+            self.assertEqual(self.message.validate(), True)
+            del self.message
 
 
 class TestFullMessage(unittest.TestCase):
@@ -174,6 +184,8 @@ class TestFullMessage(unittest.TestCase):
         self.ok_msgs.append({"header": {"version": 1, "id": 1, "payload": 1, "timing": 1, "ipp": ipp}, "body": s_id})
         self.ok_msgs.append({"header": {"version": 1, "id": 0, "payload": 0, "timing": 1, "ipp": ipp}, "body": s_id})
         self.ok_msgs.append({"header": {"version": 1, "id": 3, "payload": 1, "timing": 1, "ipp": ipp}, "body": s_id})
+
+    ### header.validate_semantic ##
 
     def test_wrong_messages(self):
         for value in self.err_msgs:
