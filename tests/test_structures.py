@@ -92,22 +92,25 @@ class TestNodeStructure(unittest.TestCase):
 class TestPortStructure(unittest.TestCase):
 
     def setUp(self):
-        port_dict = {'port_no': 1, 'name':'GigabitEthernet1/1', 'speed':1000000000}
+        port_dict = {'port_no': 1, 'name': 'GigabitEthernet1/1', 'speed': 1}
         self.port = Port(port_dict)
 
+    def positive_int_no_null(self, fieldname, error_text):
+        self.assertEqual(getattr(self.port, fieldname), 1)
+        setattr(self.port, fieldname, '43')
+        self.assertEqual(getattr(self.port, fieldname), 43)
+        with self.assertRaisesRegex(PortAttributeError, '{} must be a positive integer'.format(error_text)):
+            setattr(self.port, fieldname, -25)
+        self.assertEqual(getattr(self.port, fieldname), 43)
+        with self.assertRaisesRegex(PortAttributeError, '{} must be a positive integer'.format(error_text)):
+            setattr(self.port, fieldname, 'abc')
+        self.assertEqual(getattr(self.port, fieldname), 43)
+        with self.assertRaisesRegex(PortAttributeError, '{} must be a positive integer'.format(error_text)):
+            setattr(self.port, fieldname, None)
+        self.assertEqual(getattr(self.port, fieldname), 43)
+
     def test_port_no(self):
-        self.assertEqual(self.port.port_no, 1)
-        self.port.port_no = '43'
-        self.assertEqual(self.port.port_no, 43)
-        with self.assertRaisesRegex(PortAttributeError, 'Port number must be a positive integer'):
-            self.port.port_no = -23
-        self.assertEqual(self.port.port_no, 43)
-        with self.assertRaisesRegex(PortAttributeError, 'Port number must be a positive integer'):
-            self.port.port_no = 'abc'
-        self.assertEqual(self.port.port_no, 43)
-        with self.assertRaisesRegex(PortAttributeError, 'Port number must be a positive integer'):
-            self.port.port_no = None
-        self.assertEqual(self.port.port_no, 43)
+        self.positive_int_no_null('port_no', 'Port number')
 
     def test_name(self):
         self.assertEqual(self.port.name, 'GigabitEthernet1/1')
@@ -120,7 +123,36 @@ class TestPortStructure(unittest.TestCase):
             self.port.name = None
         self.assertEqual(self.port.name, 'abcdefg')
 
+    def test_speed(self):
+        self.positive_int_no_null('speed', 'Speed')
 
+    def test_neighbors(self):
+        self.assertEqual(self.port.neighbors, list())
+        nodes = [Node({'dpid': '09a2c3d5e6f70912', 'controller_id': 5, 'n_tables': 2}),
+                 Node({'dpid': '09afc3dae6470912', 'controller_id': 67, 'n_tables': 1})]
+        self.port.neighbors = nodes
+        self.assertEqual(self.port.neighbors, nodes)
+        with self.assertRaisesRegex(PortAttributeError, 'Neighbors must be a list of Node instances'):
+            self.port.neighbors = [Node({'dpid': '09432c3d5e6f7912', 'controller_id': 5, 'n_tables': 2}), 'xyz']
+        self.assertEqual(self.port.neighbors, nodes)
+        with self.assertRaisesRegex(PortAttributeError, 'Neighbors must be a list of Node instances'):
+            self.port.neighbors = Node({'dpid': '09432c3d5e6f7912', 'controller_id': 5, 'n_tables': 2})
+        self.assertEqual(self.port.neighbors, nodes)
+        self.port.neighbors = None
+        self.assertEqual(self.port.neighbors, list())
+
+    def test_uptime(self):
+        self.assertEqual(self.port.uptime, None)
+        self.port.uptime = '2345'
+        self.assertEqual(self.port.uptime, 2345)
+        with self.assertRaisesRegex(PortAttributeError, 'Uptime must be a positive integer or None'):
+            self.port.uptime = 'abcdef'
+        self.assertEqual(self.port.uptime, 2345)
+        self.port.uptime = None
+        self.assertEqual(self.port.uptime, None)
+        with self.assertRaisesRegex(PortAttributeError, 'Uptime must be a positive integer or None'):
+            self.port.uptime = -45
+        self.assertEqual(self.port.uptime, None)
 
 if __name__ == '__main__':
     unittest.main()

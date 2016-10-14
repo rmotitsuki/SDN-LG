@@ -159,6 +159,9 @@ class Port(object):
     def _instantiate_port(self, port):
         self.port_no = port.get('port_no')
         self.name = port.get('name')
+        self.speed = port.get('speed')
+        self.neighbors = port.get('neighbors')
+        self.uptime = port.get('uptime')
 
     @property
     def port_no(self):
@@ -189,3 +192,53 @@ class Port(object):
         else:
             raise PortAttributeError('Name must be a string')
 
+
+    @property
+    def speed(self):
+        return self._speed
+
+    @speed.setter
+    def speed(self, my_speed):
+        valid = True
+        try:
+            my_speed = int(my_speed)
+            if my_speed < 0:
+                valid = False
+        except (ValueError, TypeError):
+            valid = False
+        if valid:
+            self._speed = my_speed
+        else:
+            raise PortAttributeError('Speed must be a positive integer')
+
+    @property
+    def neighbors(self):
+        return self._neighbors
+
+    @neighbors.setter
+    def neighbors(self, my_neighbors):
+        valid = True
+        if my_neighbors is not None:
+            if isinstance(my_neighbors, collections.abc.Sequence):
+                if not all(isinstance(n, Node) for n in my_neighbors):
+                    valid = False
+            else:
+                valid = False
+        else:
+            my_neighbors = list()
+        if valid:
+            self._neighbors = my_neighbors
+        else:
+            raise PortAttributeError('Neighbors must be a list of Node instances or None')
+
+    @property
+    def uptime(self):
+        return self._uptime
+
+    @uptime.setter
+    def uptime(self, my_uptime):
+        cond, my_uptime = pos_int_or_none(my_uptime)
+        if cond:
+            self._uptime = my_uptime
+        else:
+            raise PortAttributeError('Uptime must be a positive integer or None')
