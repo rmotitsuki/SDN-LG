@@ -1,0 +1,189 @@
+/* d3-context-menu styles */
+
+.d3-context-menu {
+	position: absolute;
+	display: none;
+	background-color: #f2f2f2;
+	border-radius: 4px;
+
+	font-family: Arial, sans-serif;
+	font-size: 14px;
+	min-width: 150px;
+	border: 1px solid #d4d4d4;
+
+	z-index:1200;
+}
+.d3-context-menu ul {
+	list-style-type: none;
+	margin: 4px 0px;
+	padding: 0px;
+	cursor: default;
+}
+.d3-context-menu ul li {
+	padding: 4px 16px;
+}
+.d3-context-menu ul li:hover {
+	background-color: #4677f8;
+	color: #fefefe;
+}
+.d3-context-menu hr {
+    margin: 0;
+    color: darkgray;
+    border-color: darkgray;
+}
+.d3-context-menu hr:parent:hover {
+    background-color: #efefef;
+    color: darkgray;
+}
+.d3-context-menu .is-disabled {
+    background-color: #efefef;
+    color: darkgray;
+}
+.d3-context-menu .is-disabled {
+    background-color: #efefef;
+    color: darkgray;
+}
+.d3-context-menu .is-disabled:hover {
+    background-color: #efefef;
+    color: darkgray;
+}
+
+/* chart styles */
+body {
+  padding-top: 50px;
+}
+/* navigation bar menu */
+.navbar-brand {
+  padding:0;
+  line-height: 2.8em;
+}
+.navbar-nav {
+    margin-left: 2em;
+    margin-left: 2em;
+}
+.logo-header {
+  max-height: 2.8em;
+  padding: 0.1em;
+}
+
+/* modal box */
+.modal-content {
+    padding:10px;
+    height: 100%;
+}
+.modal-dialog {
+  width: 90%;
+  height: 700px;
+}
+.modal-body {
+  overflow-y: auto;
+}
+
+/* topology */
+/* topology panel parent div */
+#topology__frame {
+    margin: 2em;
+}
+
+/* d3 canvas svg */
+#topology__canvas svg {
+  /* height: auto; */
+  border: 1px solid lightgray;
+}
+.node {
+  cursor: pointer;
+}
+rect.node  {
+  fill: skyblue;
+  stroke: green;
+  stroke-width: 1.5px;
+}
+.node text {
+  font: 10px sans-serif;
+}
+.link {
+  fill: none;
+  /* stroke: lightgray; */
+  stroke-width: 1.5px;
+}
+circle {
+  stroke: #333;
+  stroke-width: 1.5px;
+}
+text {
+  font: 10px sans-serif;
+  pointer-events: none;
+  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+}
+.canvas {
+    position: relative;
+    width: 960px;
+}
+.svg-container {
+    display: inline-block;
+    position: relative;
+
+    vertical-align: top;
+    overflow: hidden;
+    padding-bottom: 1em;
+}
+.svg-content-responsive {
+    display: inline-block;
+    position: relative;
+    top: 10px;
+    left: 0;
+}
+/* switch interfaces popup */
+.popup {
+    position: absolute;
+    bottom: 2em;
+    right: 2em;
+    background-color: #fff;
+    width: 200px;
+    border: 1px #ccc solid;
+    border-radius: 6px;
+    box-shadow: #333 2px 2px 4px;
+    padding: 8px;
+    font-family: arial, helvetica, sans-serif;
+}
+.popup h2 {
+    margin: 0 0 1rem 0;
+    font-size:20px;
+}
+
+/**
+  Topology data table
+*/
+#topology__elements {
+    margin: 2em;
+}
+#topology__elements table td {
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+/* topology id */
+#topology__elements table td:nth-child(1),
+ #topology__elements table td:nth-child(4) {
+  width: 11em;
+}
+/* topology color */
+#topology__elements table td:nth-child(2) {
+  width: 5em;
+  white-space: nowrap;
+  font-weight:bold;
+}
+/* topology arrow */
+#topology__elements table td:nth-child(3) {
+  width: 3em;
+}
+/* topology color */
+#topology__elements table td:nth-child(5) {
+  width: 100%;
+  white-space: nowrap;
+  font-weight:bold;
+}
+.loading-icon-div {
+  margin:0;
+  padding: 0.5em 0 0 0;
+  display:none;
+}
