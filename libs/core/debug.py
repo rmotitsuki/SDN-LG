@@ -11,7 +11,7 @@ def debug(func):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print '*** %s'% func.__name__
+        print('*** %s'% func.__name__)
         return func(*args, **kwargs)
     return wrapper
 
