@@ -3,17 +3,17 @@
     {% block head %}
         <title>{% block title %}Welcome{% endblock %} | Flask (A Python Microframework)</title>
         <meta charset=utf-8>
-        <script src="{{ url_for('static', filename='lib/highlight.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='lib/jquery.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='lib/bootstrap.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='lib/jquery.mask.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='jslib/highlight.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='jslib/jquery.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='jslib/bootstrap.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='jslib/jquery.mask.min.js') }}"></script>
 
-        <script src="{{ url_for('static', filename='lib/d3.v3.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='lib/d3-context-menu.js') }}"></script>
+        <script src="{{ url_for('static', filename='jslib/d3.v3.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='jslib/d3-context-menu.js') }}"></script>
 
-        <link href="{{ url_for('static', filename='lib/bootstrap.min.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='jslib/bootstrap.min.css') }}" rel="stylesheet">
         <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-        <link href="{{ url_for('static', filename='lib/ie10-viewport-bug-workaround.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='jslib/ie10-viewport-bug-workaround.css') }}" rel="stylesheet">
 
         <link href="{{ url_for('static', filename='css/layout.css') }}" rel="stylesheet">
         <script src="{{ url_for('static', filename='js/conf.js') }}"></script>
