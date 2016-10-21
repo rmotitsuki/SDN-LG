@@ -98,6 +98,14 @@
         var width = 960,
             height = 600;
 
+        var zoomed = function() {
+          container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+        }
+
+        var zoom = d3.behavior.zoom()
+            .scaleExtent([1, 10])
+            .on("zoom", zoomed);
+
         svg = d3.select(selector)
             .append("div")
             .classed("svg-container", true) //container class to make it responsive
@@ -107,7 +115,14 @@
             .attr("preserveAspectRatio", "xMinYMin meet")
             .attr("viewBox", "0 0 " + width +" "+ height)
             //class to make it responsive
-            .classed("svg-content-responsive", true);
+            .classed("svg-content-responsive", true)
+            .append("g")
+              .attr("transform", "translate(" + 5 + "," + 5 + ")")
+              .call(zoom);
+
+        var container = svg.append("g");
+
+
 
         // Create the initial svg element and the utilities you will need.
         // These are the actions that won't be necessary on update.
@@ -170,10 +185,11 @@
                 .on("tick", tick)
                 .start();
 
-            // Per-type markers, as they don't inherit styles.
-            svg.selectAll("defs").remove();
 
-            svg.append("defs").selectAll("marker")
+            // Per-type markers, as they don't inherit styles.
+            container.selectAll("defs").remove();
+
+            container.append("defs").selectAll("marker")
                 .data(["suit", "licensing", "resolved"])
                 .enter()
                 /*
@@ -191,9 +207,9 @@
 
 
             // Clear nodes and paths
-            svg.selectAll("g").remove();
+            container.selectAll("g").remove();
 
-            var path = svg.append("g").selectAll("path")
+            var path = container.append("g").selectAll("path")
                 .data(force.links())
                 .enter().append("svg:path")
                 .attr("class", function(d) { console.log(d); return "link " + d.type; })
@@ -202,7 +218,7 @@
 
 
             // switch draw
-            var circle = svg.append("g").selectAll("circle")
+            var circle = container.append("g").selectAll("circle")
                 .data(force.nodes())
                 .enter().append("circle")
                 .attr("r", 6)
@@ -212,32 +228,34 @@
                 //force_nodes[x].stroke_width
                 .call(force.drag);
 
-    /*
-            svg.selectAll("circle")
+            /*
+            container.selectAll("circle")
                 .on("click", function(){
                     d3.select(this).attr('r', 25)
                     .style("fill","lightcoral")
                     .style("stroke","red");
                 });
-    */
+            */
 
-            var text = svg.append("g").selectAll("text")
+            var text = container.append("g").selectAll("text")
                 .data(force.nodes())
                 .enter().append("text")
                 .attr("x", 8)
                 .attr("y", ".31em")
                 .text(function(d) { if(d.label) return d.label; return d.name; });
 
-           var source_label = svg.append("g")
-                .attr("class", "block-source-labels")
+            var source_label = container.append("g")
                 .selectAll("text")
                 .data(force.links())
                 .enter().append("text")
+                .attr("class", "source-label")
                 .text(function(d) { console.log(d.source_label.name); return d.source_label.name; });
-           var target_label = svg.append("g").selectAll("text")
-                .data(force.links())
-                .enter().append("text")
-                .text(function(d) { console.log(d.target_label.name); return d.target_label.name; });
+
+            var target_label = container.append("g").selectAll("text")
+               .data(force.links())
+               .enter().append("text")
+               .attr("class", "target-label")
+               .text(function(d) { console.log(d.target_label.name); return d.target_label.name; });
 
             // Use elliptical arc path segments to doubly-encode directionality.
             function tick() {

@@ -116,7 +116,8 @@ rect.node  {
   stroke-width: 1.5px;
 }
 .node text {
-  font: 10px sans-serif;
+  font: 12px sans-serif;
+  font-weight: bold;
 }
 .link {
   fill: none;
@@ -131,6 +132,10 @@ text {
   font: 10px sans-serif;
   pointer-events: none;
   text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+}
+.target-label,
+.source-label {
+    font-size: 8px;
 }
 .canvas {
     position: relative;
