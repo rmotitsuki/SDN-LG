@@ -744,20 +744,6 @@ var D3JS = function() {
     }
 }
 
-// Initial configuration
-// Configure handlers
-var _initial_configuration = function() {
-    $('#topology__btn__label__link').click(function() {
-        if ($(this).hasClass("active")) {
-            $('.target-label').hide();
-            $('.source-label').hide();
-        } else {
-            $('.target-label').show();
-            $('.source-label').show();
-        }
-    });
-}
-
 /* Initial data lod */
 /* Call ajax to load switches and topology */
 var _initial_data_load = function() {
@@ -778,12 +764,18 @@ var _initial_data_load = function() {
     sdntopology.call_get_topology();
 }
 
-
-
 /* Initial load */
 $(function() {
-    // Load js configuration data
-    _initial_configuration();
+    // Configure toolbar handlers
+    $('#topology__toolbar__btn__label__link').click(function() {
+        if ($(this).hasClass("active")) {
+            $('.target-label').hide();
+            $('.source-label').hide();
+        } else {
+            $('.target-label').show();
+            $('.source-label').show();
+        }
+    });
 
     // Initialize classes
     sdncolor = new SDNColor();
