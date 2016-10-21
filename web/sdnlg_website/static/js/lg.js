@@ -2,9 +2,9 @@
     var _initial_configuration = function() {
         if (typeof SDNLG_CONF != 'undefined') {
             // header logo img src
-            $('#header__logo').attr("src", SDNLG_CONF.header_logo_img_src);
+            $('#header__logo img').attr("src", SDNLG_CONF.header_logo_img_src);
             // header name
-            $('#header__name').text(SDNLG_CONF.header_name);
+            // $('#header__name').text(SDNLG_CONF.header_name);
             // SDN LG version
             $('#about__version').text(SDNLG_CONF.version);
             $('#about__roadmap').html(SDNLG_CONF.about_roadmap);

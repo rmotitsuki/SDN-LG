@@ -1,6 +1,5 @@
 var SDNLG_CONF = {
     header_logo_img_src: '/static/img/amlight.png',
-    header_name: 'SDN LG',
     version: 0.1,
     dict: {
         "0000000000000001": "AC",
