@@ -107,14 +107,56 @@ var ForceGraph = function(selector, data) {
     var width = 960,
         height = 600;
 
+    // gray color like 'disabled' color
+    var default_node_color = "#ccc";
+    var default_link_color = "#888";
+
+    var highlight_color = "#4D7C9D";
+    var highlight_trans = 0.1;
+    // highlight var helpers
+    // highlight var helpers
+    var focus_node = null, highlight_node = null;
+
+    var min_zoom = 0.1;
+    var max_zoom = 7;
+
+    // flag to outline drawing during ondrag
+    var outline = false;
+
+    // node/circle size
+    var size = d3.scale.pow().exponent(1)
+      .domain([1,100])
+      .range([8,24]);
+    var nominal_base_node_size = 8;
+    var nominal_stroke = 1.5;
+
+    var linkedByIndex = {};
+
+
+    console.log('linkedByIndex');
+    console.log(linkedByIndex);
+
+	function isConnected(a, b) {
+        return linkedByIndex[a.name.id + "," + b.name.id] || linkedByIndex[b.name.id + "," + a.name.id] || a.name.id == b.name.id;
+    }
+
+	function hasConnections(a) {
+		for (var property in linkedByIndex) {
+            s = property.split(",");
+            if ((s[0] == a.index || s[1] == a.index) && linkedByIndex[property])
+                return true;
+		}
+	    return false;
+	}
+
     var zoomed = function() {
-      container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+        container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
     }
 
     var zoom = d3.behavior.zoom()
-        .scaleExtent([1, 10])
+        .scaleExtent([min_zoom, max_zoom])
         .on("zoom", zoomed);
-
+/*
     svg = d3.select(selector)
         .append("div")
         .classed("svg-container", true) //container class to make it responsive
@@ -127,8 +169,12 @@ var ForceGraph = function(selector, data) {
         .classed("svg-content-responsive", true)
         .append("g")
         .call(zoom);
-
         ;
+    */
+    var svg = d3.select(selector).append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .call(zoom);;
 
     var container = svg.append("g");
 
@@ -183,6 +229,11 @@ var ForceGraph = function(selector, data) {
             }
         }
 
+        for (var x in _data.links) {
+            // setting highlight helper
+            linkedByIndex[_data.links[x].source.name + "," + _data.links[x].target.name] = true;
+        }
+
         var force = d3.layout.force()
             .nodes(force_nodes)
             .links(_data.links)
@@ -193,11 +244,11 @@ var ForceGraph = function(selector, data) {
             .on("tick", tick)
             .start();
         // reconfigure drag, so switch drag take precedence over panning
-        var drag = force.drag()
-            .on("dragstart", dragstarted)
-            .on("drag", dragged)
-            .on("dragend", dragended);
-
+/*
+        var drag = force.drag();
+            //.on("dragstart", dragstarted)
+            //.on("drag", dragged)
+            //.on("dragend", dragended);
         function dragstarted(d) {
           d3.event.sourceEvent.stopPropagation();
           d3.select(this).classed("dragging", true);
@@ -211,29 +262,12 @@ var ForceGraph = function(selector, data) {
         function dragended(d) {
           d3.select(this).classed("dragging", false);
         }
-
+*/
         // Per-type markers, as they don't inherit styles.
-        container.selectAll("defs").remove();
-
-        container.append("defs").selectAll("marker")
-            .data(["suit", "licensing", "resolved"])
-            .enter()
-            /*
-            .append("marker")
-            .attr("id", function(d) { return d; })
-            .attr("viewBox", "0 -5 10 10")
-            .attr("refX", 15)
-            .attr("refY", -1.5)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
-            .attr("orient", "auto")
-            */
-            .append("path")
-            .attr("d", "M0,-5L10,0L0,5");
 
 
         // Clear nodes and paths
-        container.selectAll("g").remove();
+        //container.selectAll("g").remove();
 
         // draw link paths
         var path = container.append("g").selectAll("path")
@@ -245,15 +279,69 @@ var ForceGraph = function(selector, data) {
 
 
         // switch draw
-        var circle = container.append("g").selectAll("circle")
+        var node = container.selectAll(".node")
             .data(force.nodes())
-            .enter().append("circle")
-            .attr("r", 6)
-            .attr("fill", function(d) { return d.background_color; })
+            .enter().append("g")
+            .attr("class", "node")
             .on('contextmenu', d3.contextMenu(menu)) // attach menu to element
+            .call(force.drag);
 
-            //force_nodes[x].stroke_width
-            .call(drag);
+        node.on("dblclick.zoom", function(d) {
+            d3.event.stopPropagation();
+            var dcx = (window.innerWidth/2-d.x*zoom.scale());
+            var dcy = (window.innerHeight/2-d.y*zoom.scale());
+            zoom.translate([dcx,dcy]);
+             g.attr("transform", "translate("+ dcx + "," + dcy  + ")scale(" + zoom.scale() + ")");
+        });
+
+        // node mouse highlight
+	    node.on("mouseover", function(d) {
+              set_highlight(d);
+          })
+          .on("mousedown", function(d) {
+              // stop global drag and force node drag
+              d3.event.stopPropagation();
+              // focus_node to control highlight events
+              focus_node = d;
+              set_focus(d)
+	          if (highlight_node === null) set_highlight(d)
+          })
+          .on("mouseout", function(d) {
+              exit_highlight();
+        });
+        d3.select(window).on("mouseup", function() {
+            console.log('mouseup');
+            console.log(focus_node);
+            console.log(highlight_trans);
+
+            if (focus_node!==null) {
+                focus_node = null;
+                if (highlight_trans < 1) {
+                    circle.style("opacity", 1);
+                    text.style("opacity", 1);
+                    path.style("opacity", 1);
+                }
+            }
+            if (highlight_node === null) exit_highlight();
+        });
+
+    	var tocolor = "fill";
+        var towhite = "stroke";
+        if (outline) {
+            tocolor = "stroke"
+            towhite = "fill"
+        }
+
+        var circle = node.append("path")
+          .attr("d", d3.svg.symbol()
+            .size(function(d) { return Math.PI*Math.pow(size(6)||nominal_base_node_size,2); }))
+          .style(tocolor, function(d) {
+            return d.background_color; })
+            //.attr("r", function(d) { return size(d.size)||nominal_base_node_size; })
+          .style("stroke-width", nominal_stroke)
+          .style(towhite, "white");
+
+
 
         /*
         container.selectAll("circle")
@@ -290,7 +378,7 @@ var ForceGraph = function(selector, data) {
         // Use elliptical arc path segments to doubly-encode directionality.
         function tick() {
             path.attr("d", linkArc);
-            circle.attr("transform", transform);
+            node.attr("transform", transform);
             text.attr("transform", transform);
             source_label.attr("transform", transformLinkSourceLabel);
             target_label.attr("transform", transformLinkTargetLabel);
@@ -298,9 +386,9 @@ var ForceGraph = function(selector, data) {
 
         function linkArc(d) {
             var dx = d.target.x - d.source.x,
-                dy = d.target.y - d.source.y,
-                dr = Math.sqrt(dx * dx + dy * dy);
-            //return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+                dy = d.target.y - d.source.y;
+                //dr = Math.sqrt(dx * dx + dy * dy);
+                //return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
             return "M" + d.source.x + "," + d.source.y + "L" + d.target.x + "," + d.target.y;
         }
 
@@ -316,6 +404,50 @@ var ForceGraph = function(selector, data) {
             dx = (d.source.x - d.target.x) * 0.2;
             dy = (d.source.y - d.target.y) * 0.2;
             return "translate(" + (d.target.x + dx) + "," + (d.target.y + dy) + ")";
+        }
+
+        // Highlight onclick functions
+
+        function set_highlight(d) {
+            svg.style("cursor","pointer");
+            if (focus_node!==null)
+                d = focus_node;
+            highlight_node = d;
+
+            if (highlight_color!="white") {
+                circle.style(towhite, function(o) {
+                    return isConnected(d, o) ? highlight_color : "white";});
+                text.style("font-weight", function(o) {
+                    return isConnected(d, o) ? "bold" : "normal";});
+                path.style("stroke", function(o) {
+                    return o.source.index == d.index || o.target.index == d.index ? highlight_color : default_link_color;
+                });
+            }
+        }
+        function exit_highlight() {
+            highlight_node = null;
+            if (focus_node===null) {
+                svg.style("cursor","move");
+                if (highlight_color!="white") {
+                    circle.style(towhite, "white");
+                    text.style("font-weight", "normal");
+                    path.style("stroke", function(o) {return default_link_color});
+                }
+            }
+        }
+        // focus highlight (onclick)
+        function set_focus(d) {
+            if (highlight_trans<1) {
+                circle.style("opacity", function(o) {
+                    return isConnected(d, o) ? 1 : highlight_trans;
+                });
+			    text.style("opacity", function(o) {
+                    return isConnected(d, o) ? 1 : highlight_trans;
+                });
+                path.style("opacity", function(o) {
+                    return o.source.index == d.index || o.target.index == d.index ? 1 : highlight_trans;
+                });
+	        }
         }
     }
 }
