@@ -33,26 +33,27 @@ class CoreCal:
         self.table_id = dict()
         self.message = None
         self.hello_queue = list()
-        # self.amqp = MessageBroker(self.process_incoming_message)
 
-    def process_incoming_message(self, msg_recv):
-        """
-            Process message received from MessageBroker
-            Args:
-                data = message received
-            Returns
-                only errors from libs.core.error_codes
-        """
-        self.message = Message()
-        if not self.message.validate_message_format(msg_recv):
-            return INVALID_MSG
-        if self.message.header.id in [ID_NEGOTIATION, HELLO, REJECT]:
-            status = self.start_negotiation()
-            if status is not True:
-                print_error(status)
-                self.reject_msg(status)
-        else:
-            self.process_update()
+        def process_incoming_message(msg_recv):
+            """
+                Process message received from MessageBroker
+                Args:
+                    data = message received
+                Returns
+                    only errors from libs.core.error_codes
+            """
+            self.message = msg_recv
+            if not self.message.validate_message_format():
+                return INVALID_MSG
+            if self.message.header.id in [ID_NEGOTIATION, HELLO, REJECT]:
+                status = self.start_negotiation()
+                if status is not True:
+                    print_error(status)
+                    self.reject_msg(status)
+            else:
+                self.process_update()
+
+        self.amqp = MessageBroker(process_incoming_message, False)
 
     def start_negotiation(self):
         """
@@ -159,8 +160,7 @@ class CoreCal:
                   "timing": 100, "ipp": "192.168.56.3:6111"}
         self.for_unittest = {"header": header, "body": data}
         print(self.for_unittest)
-        # serialize and send
-        # return self.amqp.send_message(serialized):
+        return self.amqp.send_message(self.for_unittest)
 
     def keepalive(self):
         # thread for hello
