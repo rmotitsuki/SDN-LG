@@ -1,4 +1,5 @@
 import collections.abc
+from libs.cal import cal
 
 
 class NodeAttributeError(Exception):
@@ -21,7 +22,7 @@ def pos_int_or_none(value):
 
 class Node(object):
     """
-    Class to represent a Node (an openflow switch). It stores all data concerning th switch
+    Class to represent a Node (an openflow switch). It stores all data concerning the switch
     """
     def __init__(self, node):
         self._dpid = None
@@ -38,6 +39,9 @@ class Node(object):
         self.controller_id = node.get('controller_id')
         self.capabilities = node.get('capabilities')
         self.n_tables = node.get('n_tables')
+        self.ports = node.get('ports')
+        self.old_color = node.get('old_color')
+        self.color = node.get('color')
 
     @property
     def dpid(self):
@@ -45,17 +49,8 @@ class Node(object):
 
     @dpid.setter
     def dpid(self, my_dpid):
-        valid = True
-        try:
-            int(my_dpid, 16)
-            if len(my_dpid) != 16:
-                valid = False
-        except ValueError:
-            valid = False
-        if valid:
-            self._dpid = my_dpid
-        else:
-            raise NodeAttributeError('Datapath ID (dpid) must be a string representing a 64-bit hexadecimal')
+        # Set the dpid. It must represent a 64-bit hexadecimal
+        self._dpid = my_dpid
 
     @property
     def controller_id(self):
@@ -63,17 +58,10 @@ class Node(object):
 
     @controller_id.setter
     def controller_id(self, my_controller_id):
-        valid = True
-        try:
-            my_controller_id = int(my_controller_id)
-            if my_controller_id < 1 or my_controller_id > 254:
-                valid = False
-        except ValueError:
-            valid = False
-        if valid:
-            self._controller_id = int(my_controller_id)
-        else:
-            raise NodeAttributeError('Controller ID must be an integer between 1 and 254 (inclusive)')
+        # The controller id must be an integer between FIRST and LAST ID (now 1 and 254)
+        # This method accepts a string representing an integer, but the value stored is always int
+        # Cannot be None
+       self._controller_id = int(my_controller_id)
 
     @property
     def capabilities(self):
@@ -89,11 +77,10 @@ class Node(object):
 
     @n_tables.setter
     def n_tables(self, my_n_tables):
-        cond, my_n_tables = pos_int_or_none(my_n_tables)
-        if cond:
-            self._n_tables = my_n_tables
-        else:
-            raise NodeAttributeError('Number of tables must be a positive integer')
+        # Number of tables must be an integer greater or equal 0. None is also accepted
+        if my_n_tables is not None:
+            my_n_tables = int(my_n_tables)
+        self._n_tables = my_n_tables
 
     @property
     def ports(self):
@@ -101,19 +88,15 @@ class Node(object):
 
     @ports.setter
     def ports(self, my_ports):
-        valid = True
-        if my_ports is not None:
-            if isinstance(my_ports, collections.abc.Sequence):
-                if not all(isinstance(p, Port) for p in my_ports):
-                    valid = False
-            else:
-                valid = False
-        else:
-            my_ports = list()
-        if valid:
+        if isinstance(my_ports, collections.abc.Sequence):
             self._ports = my_ports
         else:
-            raise NodeAttributeError('Ports must be a list of Port instances or None')
+            self._ports = list()
+        for port in self.ports:
+            try:
+                port.node = self
+            except AttributeError:
+                pass
 
     @property
     def old_color(self):
@@ -121,11 +104,9 @@ class Node(object):
 
     @old_color.setter
     def old_color(self, my_old_color):
-        cond, my_old_color = pos_int_or_none(my_old_color)
-        if cond:
-            self._old_color = my_old_color
-        else:
-            raise NodeAttributeError('Color must be a positive integer')
+        if my_old_color is not None:
+            my_old_color = int(my_old_color)
+        self._old_color = my_old_color
 
     @property
     def color(self):
@@ -133,11 +114,26 @@ class Node(object):
 
     @color.setter
     def color(self, my_color):
-        cond, my_color = pos_int_or_none(my_color)
-        if cond:
-            self._color = my_color
-        else:
-            raise NodeAttributeError('Color must be a positive integer')
+        if my_color is not None:
+            my_color = int(my_color)
+        self._color = my_color
+
+    def add_port(self, port):
+        if port not in self:
+            self.ports.append(port)
+            port.node = self
+
+    def port_no(self, port_no):
+        for p in self.ports:
+            if p.port_no == port_no:
+                return p
+        return None
+
+    def __contains__(self, port):
+        for p in self.ports:
+            if p.port_no == port.port_no and p.name == port.name and p.speed == port.speed:
+                return True
+        return False
 
     def __repr__(self):
         return '<Node {}, controlled by controller {}>'.format(self.dpid, self.controller_id)
@@ -153,6 +149,7 @@ class Port(object):
         self._speed = None
         self._neighbors = list()
         self._uptime = None
+        self._node = None
 
         self._instantiate_port(port)
 
@@ -163,23 +160,16 @@ class Port(object):
         self.neighbors = port.get('neighbors')
         self.uptime = port.get('uptime')
 
+    def __eq__(self, other):
+        return self.port_no == other.port_no and self.name == other.name and self.speed == other.speed
+
     @property
     def port_no(self):
         return self._port_no
 
     @port_no.setter
     def port_no(self, my_port_no):
-        valid = True
-        try:
-            my_port_no = int(my_port_no)
-            if my_port_no < 0:
-                valid = False
-        except (ValueError, TypeError):
-            valid = False
-        if valid:
-            self._port_no = my_port_no
-        else:
-            raise PortAttributeError('Port number must be a positive integer')
+        self._port_no = int(my_port_no)
 
     @property
     def name(self):
@@ -187,11 +177,7 @@ class Port(object):
 
     @name.setter
     def name(self, my_name):
-        if isinstance(my_name, str):
-            self._name = my_name
-        else:
-            raise PortAttributeError('Name must be a string')
-
+        self._name = my_name
 
     @property
     def speed(self):
@@ -199,17 +185,7 @@ class Port(object):
 
     @speed.setter
     def speed(self, my_speed):
-        valid = True
-        try:
-            my_speed = int(my_speed)
-            if my_speed < 0:
-                valid = False
-        except (ValueError, TypeError):
-            valid = False
-        if valid:
-            self._speed = my_speed
-        else:
-            raise PortAttributeError('Speed must be a positive integer')
+        self._speed = int(my_speed)
 
     @property
     def neighbors(self):
@@ -217,19 +193,10 @@ class Port(object):
 
     @neighbors.setter
     def neighbors(self, my_neighbors):
-        valid = True
-        if my_neighbors is not None:
-            if isinstance(my_neighbors, collections.abc.Sequence):
-                if not all(isinstance(n, Node) for n in my_neighbors):
-                    valid = False
-            else:
-                valid = False
-        else:
-            my_neighbors = list()
-        if valid:
+        if isinstance(my_neighbors, collections.abc.Sequence):
             self._neighbors = my_neighbors
         else:
-            raise PortAttributeError('Neighbors must be a list of Node instances or None')
+            self._neighbors = list()
 
     @property
     def uptime(self):
@@ -237,8 +204,14 @@ class Port(object):
 
     @uptime.setter
     def uptime(self, my_uptime):
-        cond, my_uptime = pos_int_or_none(my_uptime)
-        if cond:
-            self._uptime = my_uptime
-        else:
-            raise PortAttributeError('Uptime must be a positive integer or None')
+        if my_uptime is not None:
+            my_uptime = int(my_uptime)
+        self._uptime = my_uptime
+
+    @property
+    def node(self):
+        return self._node
+
+    @node.setter
+    def node(self, my_node):
+        self._node = my_node
