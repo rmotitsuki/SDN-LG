@@ -34,4 +34,5 @@ var SDNLG_CONF = {
     },
     about_roadmap: "<h4>Roadmap</h4>"+
                    "<li>New Features...</li>",
+    rest_server: "http://127.0.0.1:5001",
 }

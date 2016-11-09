@@ -4,3 +4,6 @@ signals
 mock
 flask
 flask-restful
+pydispatch
+requests
+configparser
