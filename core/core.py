@@ -65,9 +65,8 @@ class Core(object, metaclass=Singleton):
         valid = True
         if my_links is not None:
             if isinstance(my_links, collections.abc.Sequence):
-                for n1, p1, n2, p2, s in my_links:
-                    if not (isinstance(n1, Node) and isinstance(p1, Port)
-                           and isinstance(n2, Node) and isinstance(p2, Port)):
+                for p1, p2 in my_links:
+                    if not isinstance(p1, Port) and isinstance(p2, Port):
                         valid = False
             else:
                 valid = False
@@ -76,7 +75,7 @@ class Core(object, metaclass=Singleton):
         if valid:
             self._links = my_links
         else:
-            raise CoreAttributeError('Links must be a list of (Node, Port, Node, Port) or None')
+            raise CoreAttributeError('Links must be a list of (Port, Port) or None')
 
     def send_packet(self, node, port, data):
         msg = Message()
@@ -159,6 +158,9 @@ def cube():
     for i in range(1, 9):
         ports.append(Port({'port_no':i, 'name': '10Gigabit{}'.format(i), 'speed':10000000000,
                            'uptime':random.randint(0,1234567)}))
+    for i in range(9, 17):
+        ports.append(Port({'port_no':i, 'name': 'Gigabit{}'.format(i), 'speed':1000000000,
+                           'uptime':random.randint(0,1234567)}))
     nodes[0].ports = ports
 
     ports = []
@@ -186,6 +188,9 @@ def cube():
     for i in range(1, 9):
         ports.append(Port({'port_no': i, 'name': 'Gigabit{}'.format(i), 'speed': 1000000000,
                            'uptime': random.randint(0, 1234567)}))
+    for i in range(9, 11):
+        ports.append(Port({'port_no': i, 'name': '10Gigabit{}'.format(i), 'speed': 10000000000,
+                           'uptime': random.randint(0, 1234567)}))
     nodes[4].ports = ports
 
     ports = []
@@ -196,19 +201,19 @@ def cube():
 
     ports = []
     for i in range(1, 9):
-        ports.append(Port({'port_no': i, 'name': '100Gigabit{}'.format(i), 'speed': 100000000000,
+        ports.append(Port({'port_no': i, 'name': '10Gigabit{}'.format(i), 'speed': 10000000000,
                            'uptime': random.randint(0, 1234567)}))
     nodes[6].ports = ports
 
-    links = [(nodes[0], nodes[0].ports[2], nodes[1], nodes[1].ports[5], 10000000000),
-             (nodes[0], nodes[0].ports[4], nodes[5], nodes[5].ports[2], 1000000000),
-             (nodes[0], nodes[0].ports[7], nodes[6], nodes[6].ports[5], 10000000000),
-             (nodes[1], nodes[1].ports[2], nodes[2], nodes[2].ports[3], 1000000000),
-             (nodes[2], nodes[2].ports[21], nodes[3], nodes[3].ports[5], 1000000000),
-             (nodes[2], nodes[2].ports[2], nodes[6], nodes[6].ports[3], 10000000000),
-             (nodes[3], nodes[3].ports[7], nodes[4], nodes[4].ports[5], 1000000000),
-             (nodes[4], nodes[4].ports[2], nodes[5], nodes[5].ports[5], 1000000000),
-             (nodes[4], nodes[4].ports[6], nodes[6], nodes[6].ports[1], 1000000000)
+    links = [(nodes[0].ports[2], nodes[1].ports[5]),
+             (nodes[0].ports[12], nodes[5].ports[2]),
+             (nodes[0].ports[7], nodes[6].ports[5]),
+             (nodes[1].ports[2], nodes[2].ports[3]),
+             (nodes[2].ports[21], nodes[3].ports[5]),
+             (nodes[2].ports[2], nodes[6].ports[3]),
+             (nodes[3].ports[7], nodes[4].ports[5]),
+             (nodes[4].ports[2], nodes[5].ports[5]),
+             (nodes[4].ports[9], nodes[6].ports[1])
              ]
 
     return nodes, links
@@ -216,8 +221,9 @@ def cube():
 
 def cube1():
     nodes, links = cube()
-    links[8] = (nodes[4], nodes[4].ports[4], nodes[2], nodes[2].ports[13], 1000000000)
+    links[8] = (nodes[4].ports[4], nodes[2].ports[13])
     return nodes, links
+
 
 class TopologyDiscovery:
 

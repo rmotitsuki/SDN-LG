@@ -37,10 +37,10 @@ class Links(Resource):
     def get(self):
         core = Core()
         returns = []
-        for n1,p1,n2,p2,speed in core.links:
-            returns.append({'node1': {'dpid': n1.dpid, 'port': {'port_no': p1.port_no, 'name': p1.name}},
-                            'node2': {'dpid': n2.dpid, 'port': {'port_no': p2.port_no, 'name': p2.name}},
-                            'speed': speed})
+        for p1, p2 in core.links:
+            returns.append({'node1': {'dpid': p1.node.dpid, 'port': {'port_no': p1.port_no, 'name': p1.name}},
+                            'node2': {'dpid': p2.node.dpid, 'port': {'port_no': p2.port_no, 'name': p2.name}},
+                            'speed': p1.speed})
         return returns
 
 
