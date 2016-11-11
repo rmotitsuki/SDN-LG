@@ -1,5 +1,5 @@
-from sdnlg_website import app
 
+from web.sdnlg_website import app
 """
 Use of Flask, a lightweight Python web framework.
 
@@ -11,4 +11,5 @@ Run:
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="0.0.0.0")
+

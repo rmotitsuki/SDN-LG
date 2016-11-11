@@ -1,42 +1,62 @@
-var DEBUG = true;
+var DEBUG = false;
 // Mock json switch list structures. Used for testing purposes.
-var MOCK_JSON_SWITCHES = '{'+
-                            '"nodes":[{"id":"0000000000000001", "name":"SW1"},' +
-                            '{"id":"0000000000000002", "name":"SW2"},' +
-                            '{"id":"0000000000000003", "name":"SW3"},' +
-                            '{"id":"0000000000000004", "name":"SW4"},' +
-                            '{"id":"0000000000000005", "name":"SW5"}]' +
-                        '}';
+var MOCK_JSON_SWITCHES = '[' +
+    '{"capabilities": "", "dpid": "0000000000000001", "n_ports": 8, "n_tables": 5},' +
+    '{"capabilities": "", "dpid": "0000000000000002", "n_ports": 16, "n_tables": 5},' +
+    '{"capabilities": "", "dpid": "0000000000000003", "n_ports": 23, "n_tables": 5},' +
+    '{"capabilities": "", "dpid": "0000000000000004", "n_ports": 8, "n_tables": 5},' +
+    '{"capabilities": "", "dpid": "0000000000000005", "n_ports": 8, "n_tables": 5},' +
+    '{"capabilities": "", "dpid": "0000000000000006", "n_ports": 16, "n_tables": 5},' +
+    '{"capabilities": "", "dpid": "0000000000000007", "n_ports": 8, "n_tables": 5}' +
+    ']';
+
 // Mock json topology structure. Used for testing purposes.
-var MOCK_JSON_TOPOLOGY = '{"links":' +
-                            '[' +
-                            '{' +
-                                '"nodes":[{"id":"0000000000000001", "name":"SW1", "port":"01", "port_name":"sw1p1"},' +
-                                '{"id":"0000000000000002", "name":"SW2", "port":"02", "port_name":"sw2p2"}]' +
-                            '}' +
-                            ',' +
-                            '{' +
-                                '"nodes":[{"id":"0000000000000002", "name":"SW2", "port":"01", "port_name":"sw2p1"},' +
-                                '{"id":"0000000000000003", "name":"SW3", "port":"01", "port_name":"sw3p1"}]' +
-                            '}' +
-                            ',' +
-                            '{' +
-                                '"nodes":[{"id":"0000000000000003", "name":"SW3", "port":"02", "port_name":"sw3p2"},' +
-                                '{"id":"0000000000000004", "name":"SW4", "port":"02", "port_name":"sw4p2"}]' +
-                            '}' +
-                            ',' +
-                            '{' +
-                                '"nodes":[{"id":"0000000000000004", "name":"SW4", "port":"01", "port_name":"sw4p1"},' +
-                                '{"id":"0000000000000005", "name":"SW5", "port":"02", "port_name":"sw5p2"}]' +
-                            '}' +
-                            ',' +
-                            '{' +
-                                '"nodes":[{"id":"0000000000000001", "name":"SW1", "port":"02", "port_name":"sw1p2"},' +
-                                '{"id":"0000000000000005", "name":"SW5", "port":"01", "port_name":"sw5p1"}]' +
-                            '}' +
-                            ']' +
-                        '}';
-$.parseJSON(MOCK_JSON_TOPOLOGY);
+var MOCK_JSON_TOPOLOGY = '[' +
+    '{   "node1": { "dpid": "0000000000000001", "port": { "name": "10Gigabit3", "port_no": 3 } },' +
+    '    "node2": { "dpid": "0000000000000002", "port": { "name": "10Gigabit6", "port_no": 6 } },' +
+    '    "speed": 10000000000 },' +
+    '{   "node1": { "dpid": "0000000000000001", "port": { "name": "10Gigabit5", "port_no": 5 } },' +
+    '    "node2": { "dpid": "0000000000000006", "port": { "name": "Gigabit3", "port_no": 3 } },' +
+    '    "speed": 1000000000 },' +
+    '{   "node1": { "dpid": "0000000000000001", "port": { "name": "10Gigabit8", "port_no": 8 } },' +
+    '    "node2": { "dpid": "0000000000000007", "port": { "name": "100Gigabit6", "port_no": 6 } },' +
+    '    "speed": 10000000000 },' +
+    '{   "node1": { "dpid": "0000000000000002", "port": { "name": "10Gigabit3", "port_no": 3 } },' +
+    '    "node2": { "dpid": "0000000000000003", "port": { "name": "10Gigabit4", "port_no": 4 } },' +
+    '    "speed": 1000000000 },' +
+    '{   "node1": { "dpid": "0000000000000003", "port": { "name": "Gigabit22", "port_no": 22 } },' +
+    '    "node2": { "dpid": "0000000000000004", "port": { "name": "Gigabit6", "port_no": 6 } },' +
+    '    "speed": 1000000000 },' +
+    '{   "node1": { "dpid": "0000000000000003", "port": { "name": "10Gigabit3", "port_no": 3 } },' +
+    '    "node2": { "dpid": "0000000000000007", "port": { "name": "100Gigabit4", "port_no": 4 } },' +
+    '    "speed": 10000000000 },' +
+    '{   "node1": { "dpid": "0000000000000004", "port": { "name": "Gigabit8", "port_no": 8 } },' +
+    '    "node2": { "dpid": "0000000000000005", "port": { "name": "Gigabit6", "port_no": 6 } },' +
+    '    "speed": 1000000000 },' +
+    '{   "node1": { "dpid": "0000000000000005", "port": { "name": "Gigabit3", "port_no": 3 } },' +
+    '    "node2": { "dpid": "0000000000000006", "port": { "name": "Gigabit6", "port_no": 6 } },' +
+    '    "speed": 1000000000 },' +
+    '{   "node1": { "dpid": "0000000000000005", "port": { "name": "Gigabit7", "port_no": 7 } },' +
+    '    "node2": { "dpid": "0000000000000007", "port": { "name": "100Gigabit2", "port_no": 2 } },' +
+    '    "speed": 1000000000 }' +
+    ']';
+// Mock json port list
+var MOCK_JSON_SWITCH_PORTS = '[' +
+    '{ "name": "10Gigabit1", "port_no": 1, "speed": 10000000000, "uptime": 726558 },' +
+    '{ "name": "10Gigabit2", "port_no": 2, "speed": 10000000000, "uptime": 614493 },' +
+    '{ "name": "10Gigabit3", "port_no": 3, "speed": 10000000000, "uptime": 464014 },' +
+    '{ "name": "10Gigabit4", "port_no": 4, "speed": 10000000000, "uptime": 997827 },' +
+    '{ "name": "10Gigabit5", "port_no": 5, "speed": 10000000000, "uptime": 632296 },' +
+    '{ "name": "10Gigabit6", "port_no": 6, "speed": 10000000000, "uptime": 482803 },' +
+    '{ "name": "10Gigabit7", "port_no": 7, "speed": 10000000000, "uptime": 1007698},' +
+    '{ "name": "10Gigabit8", "port_no": 8, "speed": 10000000000, "uptime": 418707 }' +
+    ']';
+
+
+var SPEED_100GB = 100000000000;
+var SPEED_10GB = 10000000000;
+var SPEED_1GB = 1000000000;
+
 /**
 This is the class that will create a graph.
 */
@@ -44,6 +64,8 @@ var ForceGraph = function(selector, data) {
     // Local variable representing the forceGraph data
     var _data = ''
     _data = data
+
+
 
     // Define contextual menu over the circles
     var menu = function(data) {
@@ -66,35 +88,9 @@ var ForceGraph = function(selector, data) {
                 disabled: true
             },
             {
-                title: 'Interfaces',
+                title: 'Interfaces (' + data.data.n_ports + ')',
                 action: function(elm, d, i) {
-                    // remove possible popups
-                    d3.select(".canvas")
-                        .selectAll(".popup")
-                        .remove();
-
-                     // Build the popup
-                    popup = d3.select(".canvas")
-                        .append("div")
-                        .attr("class", "popup");
-                    // close icon
-                    popup.append("button")
-                        .attr("type", "button")
-                        .attr("class", "close")
-                        .append("span")
-                            .html('&times;')
-                            .on("click", function(d) {
-                                    d3.select(".canvas")
-                                    .selectAll(".popup")
-                                    .remove();
-                                });
-                    // popup content
-                    popup.append("h2").text(d.name);
-                    popup.append("p").text("ETH1")
-                    popup.append("p")
-                        .append("a")
-                        .attr("href",d.link)
-                        .text("ETH2");
+                    sdntopology.call_get_switch_ports(d.dpid);
                 }
             },
             {
@@ -132,12 +128,8 @@ var ForceGraph = function(selector, data) {
 
     var linkedByIndex = {};
 
-
-    console.log('linkedByIndex');
-    console.log(linkedByIndex);
-
 	function isConnected(a, b) {
-        return linkedByIndex[a.name.id + "," + b.name.id] || linkedByIndex[b.name.id + "," + a.name.id] || a.name.id == b.name.id;
+        return linkedByIndex[a.dpid + "," + b.dpid] || linkedByIndex[b.dpid + "," + a.dpid] || a.dpid == b.dpid;
     }
 
 	function hasConnections(a) {
@@ -231,7 +223,7 @@ var ForceGraph = function(selector, data) {
 
         for (var x in _data.links) {
             // setting highlight helper
-            linkedByIndex[_data.links[x].source.name + "," + _data.links[x].target.name] = true;
+            linkedByIndex[_data.links[x].source.dpid + "," + _data.links[x].target.dpid] = true;
         }
 
         var force = d3.layout.force()
@@ -273,8 +265,19 @@ var ForceGraph = function(selector, data) {
         var path = container.append("g").selectAll("path")
             .data(force.links())
             .enter().append("svg:path")
-            .attr("class", function(d) { console.log(d); return "link " + d.type; })
-            .attr("stroke", function(d) { console.log('stroke = ' + d.color); return d.color; })
+            .attr("class", function(d) {
+                var return_var = "";
+                if (d.speed >= SPEED_100GB) {
+                    return_var = return_var + " link-large";
+                } else if (d.speed >= SPEED_10GB) {
+                    return_var = return_var + " link-medium";
+                } else if (d.speed >= SPEED_1GB) {
+                    return_var = return_var + " link-thin";
+                }
+                return_var = return_var + " link " + d.type;
+                return return_var;
+            })
+            .attr("stroke", function(d) { return d.color; })
             .attr("marker-end", function(d) { return "url(#" + d.type + ")"; });
 
 
@@ -310,10 +313,6 @@ var ForceGraph = function(selector, data) {
               exit_highlight();
         });
         d3.select(window).on("mouseup", function() {
-            console.log('mouseup');
-            console.log(focus_node);
-            console.log(highlight_trans);
-
             if (focus_node!==null) {
                 focus_node = null;
                 if (highlight_trans < 1) {
@@ -360,20 +359,29 @@ var ForceGraph = function(selector, data) {
             .attr("y", ".31em")
             .text(function(d) { if(d.label) return d.label; return d.name; });
 
-        // draw link label
+        // draw link source label
         var source_label = container.append("g")
             .selectAll("text")
             .data(force.links())
             .enter().append("text")
             .attr("class", "source-label")
-            .text(function(d) { console.log(d.source_label.name); return d.source_label.name; });
+            .text(function(d) { return d.source_label.name; });
 
-        // draw link label
+        // draw link target label
         var target_label = container.append("g").selectAll("text")
            .data(force.links())
            .enter().append("text")
            .attr("class", "target-label")
-           .text(function(d) { console.log(d.target_label.name); return d.target_label.name; });
+           .text(function(d) { return d.target_label.name; });
+
+        // draw link label
+        var link_label = container.append("g").selectAll("text")
+            .data(force.links())
+            .enter().append("text")
+            .attr("class", "speed-label")
+            .text(function(d) {
+                return format_speed(d.speed);
+            });
 
         // Use elliptical arc path segments to doubly-encode directionality.
         function tick() {
@@ -382,6 +390,7 @@ var ForceGraph = function(selector, data) {
             text.attr("transform", transform);
             source_label.attr("transform", transformLinkSourceLabel);
             target_label.attr("transform", transformLinkTargetLabel);
+            link_label.attr("transform", transformLinkLabel);
         }
 
         function linkArc(d) {
@@ -403,6 +412,11 @@ var ForceGraph = function(selector, data) {
         function transformLinkTargetLabel(d) {
             dx = (d.source.x - d.target.x) * 0.2;
             dy = (d.source.y - d.target.y) * 0.2;
+            return "translate(" + (d.target.x + dx) + "," + (d.target.y + dy) + ")";
+        }
+        function transformLinkLabel(d) {
+            dx = (d.source.x - d.target.x) * 0.5;
+            dy = (d.source.y - d.target.y) * 0.5;
             return "translate(" + (d.target.x + dx) + "," + (d.target.y + dy) + ")";
         }
 
@@ -494,9 +508,12 @@ var SDNTopology = function() {
      */
     this.call_get_switches = function() {
         var ajax_done = function(jsonObj) {
-            for (var x = 0; x < jsonObj.nodes.length; x++) {
+            for (var x = 0; x < jsonObj.length; x++) {
                 // storing switch values
-                sdntopology.switches.push(new Switch(jsonObj.nodes[x].id));
+                var switch_obj = new Switch(jsonObj[x].dpid);
+                switch_obj.n_ports = jsonObj[x].n_ports;
+                switch_obj.n_tables = jsonObj[x].n_tables;
+                sdntopology.switches.push(switch_obj);
             }
             // sort
             sdntopology.switches = sdntopology.switches.sort();
@@ -511,9 +528,9 @@ var SDNTopology = function() {
             ajax_done(jsonobj);
         } else {
             var jqxhr = $.ajax({
-                url:"/sdntrace/switches",
-                crossdomain:true,
+                url:"/switches",
                 dataType: 'json',
+                crossdomain:true,
             }).done(function(json) {
                 ajax_done(json);
             })
@@ -560,18 +577,17 @@ var SDNTopology = function() {
             // verify if the json is not a '{}' response
             if (!jQuery.isEmptyObject(jsonObj)) {
                 $('#topology__elements').show();
+                $.each( jsonObj, function( key, link ) {
+                    var linkObj = new Link();
+                    linkObj.speed = link.speed;
 
-                $.each( jsonObj.links, function( key, link ) {
-                    $.each( link, function( key, nodes ) {
-                        var link = new Link();
-                        link.node1 = new Switch(nodes[0].id);
-                        link.node2 = new Switch(nodes[1].id);
+                    linkObj.node1 = new Switch(link.node1.dpid);
+                    linkObj.node2 = new Switch(link.node2.dpid);
 
-                        link.label1 = nodes[0].port_name;
-                        link.label2 = nodes[1].port_name;
+                    linkObj.label1 = link.node1.port.name;
+                    linkObj.label2 = link.node2.port.name;
 
-                        sdntopology.add_topology(link);
-                    });
+                    sdntopology.add_topology(linkObj);
                 });
 
                 // render HTML data
@@ -590,7 +606,7 @@ var SDNTopology = function() {
             ajax_done(jsonobj);
         } else {
             var jqxhr = $.ajax({
-                url: "/sdntrace/switches/topology",
+                url: "/links",
                 dataType: 'json',
             }).done(function(json) {
                 ajax_done(json);
@@ -603,6 +619,101 @@ var SDNTopology = function() {
             });
         }
     }
+
+    /**
+     * Call ajax to load the switch ports data.
+     */
+    this.call_get_switch_ports = function(dpid) {
+        var ajax_done = function(json) {
+            var jsonObj;
+            jsonObj= json;
+
+            // verify if the json is not a '{}' response
+            if (!jQuery.isEmptyObject(jsonObj)) {
+                // render D3 popup
+                popup_switch(dpid, jsonObj);
+            }
+        }
+
+        var popup_switch = function(dpid, data) {
+            // remove possible popups
+            d3.select(".canvas")
+                .selectAll(".popup")
+                .remove();
+
+             // Build the popup
+            popup = d3.select(".canvas")
+                .append("div")
+                .attr("class", "popup")
+                .attr("id", "switch_popup");
+            // close icon
+            popup.append("button")
+                .attr("type", "button")
+                .attr("class", "close")
+                .append("span")
+                    .html('&times;')
+                    // removing the popup
+                    .on("click", function(d) {
+                            d3.select(".canvas")
+                            .selectAll(".popup")
+                            .remove();
+                        });
+            // popup content
+            popup.append("div").attr("class","popup_header")
+                .text(dpid);
+            popup.append("div").attr("class","popup_header")
+                .text("Interfaces (" + data.length + "):")
+            popup.append("hr");
+            var popup_body = popup.append("div")
+                .attr("class","popup_body")
+
+            var update_popup_body = popup_body.selectAll("p").data(data);
+            update_popup_body
+                .enter()
+                .append("p")
+                .append("a")
+
+                // adding click function
+                .on("click", function(d) {
+                    popup.selectAll(".popup_body").remove();
+                    var popup_body = popup.append("div")
+                        .attr("class","popup_body")
+                    popup_body.append("p").text("Port n.: " + d.port_no);
+                    popup_body.append("p").text("Port name: " + d.name);
+                    popup_body.append("p").text("Port speed: " + format_speed(d.speed));
+                    popup_body.append("p").text("Port uptime: " + d.uptime);
+                    // adding back button
+                    popup_body.append("p")
+                        .append("a")
+                        .text("back")
+                        .on("click", function() { popup_switch(dpid, data); });
+                 })
+                .text(function(d) { return d.port_no + " - " + d.name; })
+                ;
+            update_popup_body.exit();
+        }
+
+        // AJAX call
+        if (DEBUG) {
+            json = MOCK_JSON_SWITCH_PORTS;
+            var jsonobj = $.parseJSON(json);
+            ajax_done(jsonobj);
+        } else {
+            var jqxhr = $.ajax({
+                url: "/switches/" + dpid + "/ports",
+                dataType: 'json',
+            }).done(function(json) {
+                ajax_done(json);
+            })
+            .fail(function() {
+                console.log( "error" );
+            })
+            .always(function() {
+                console.log( "complete" );
+            });
+        }
+    }
+
 
     /**
      * Render HTML of the topology.
@@ -657,11 +768,17 @@ var SDNTopology = function() {
 }
 
 var Link = function() {
+    // Switch obj
     this.node1 = null;
     this.node2 = null;
 
+    // String
     this.label1 = null;
     this.label2 = null;
+
+    // number. Bits per second.
+    this.speed = null;
+
 }
 
 /**
@@ -669,6 +786,10 @@ var Link = function() {
  */
 var Switch = function(switch_id) {
     this.id = switch_id;
+    this.dpid = switch_id;
+
+    this.n_ports;
+    this.n_tables;
 
     /**
      * Get switch fantasy name from configuration data.
@@ -767,7 +888,7 @@ var D3JS = function() {
             node_id = sdntopology.switches[x].id;
             // positioning in spiral mode to help the physics animation and prevent crossing lines
             angle = 0.1 * x;
-            node_obj = {id: node_id, name: node_id, label:sdntopology.switches[x].get_node_name(), x:(1+angle)*Math.cos(angle), y:(1+angle)*Math.sin(angle), physics:true, mass:2, borderWidth:1};
+            node_obj = {id: node_id, dpid: node_id, name: node_id, data:sdntopology.switches[x], label:sdntopology.switches[x].get_node_name(), x:(1+angle)*Math.cos(angle), y:(1+angle)*Math.sin(angle), physics:true, mass:2, borderWidth:1};
             // Trace coloring
             if (typeof(node_obj.color)==='undefined') {
                 node_obj.color = {'background' : sdncolor.color_default};
@@ -809,8 +930,10 @@ var D3JS = function() {
             label_from = sdntopology.topology[x].label1;
             label_to = sdntopology.topology[x].label2;
 
+            speed = sdntopology.topology[x].speed;
 
-            edgeObj = {id:x, name:x, source: node_from_id, target: node_to_id, source_label:label_from, target_label:label_to, arrows:'to', type: "suit"};
+
+            edgeObj = {id:x, name:x, source: node_from_id, target: node_to_id, source_label:label_from, target_label:label_to, speed:speed, arrows:'to', type: "suit"};
             // Verify trace to change edge colors and labels.
             has_edge_path_obj = this._has_edge_path(edgesArray, edgeObj);
             edgesArray.push(edgeObj);
@@ -841,6 +964,11 @@ var D3JS = function() {
         data.nodes_data = this.nodes;
 
         // creating Force Graph paths
+        for (var key in this.nodes) {
+            data.nodes[this.nodes[key].dpid] = this.nodes[key];
+        }
+
+        // creating Force Graph paths
         for (var key in this.edges) {
             data.links.push(this.edges[key]);
         }
@@ -852,6 +980,7 @@ var D3JS = function() {
 
           link.source_label = {name: link.source_label};
           link.target_label = {name: link.target_label};
+          //link.speed = link.speed;
         });
 
         // Link attribute to store json data
@@ -899,6 +1028,7 @@ var _initial_data_load = function() {
 /* Initial load */
 $(function() {
     // Configure toolbar handlers
+    // Topology port labels handler
     $('#topology__toolbar__btn__label__link').click(function() {
         if ($(this).hasClass("active")) {
             $('.target-label').hide();
@@ -906,6 +1036,14 @@ $(function() {
         } else {
             $('.target-label').show();
             $('.source-label').show();
+        }
+    });
+    // Topology speed link labels handler
+    $('#topology__toolbar__btn__label__speed').click(function() {
+        if ($(this).hasClass("active")) {
+            $('.speed-label').hide();
+        } else {
+            $('.speed-label').show();
         }
     });
 

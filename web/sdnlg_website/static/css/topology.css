@@ -82,6 +82,15 @@ rect.node  {
   stroke: lightgray;
   stroke-width: 1.5px;
 }
+.link-thin {
+  stroke-width: 1.5px;
+}
+.link-medium {
+  stroke-width: 5px;
+}
+.link-large {
+  stroke-width: 10px;
+}
 circle {
   stroke: #333;
   stroke-width: 1.5px;
@@ -92,7 +101,8 @@ text {
   text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
 }
 .target-label,
-.source-label {
+.source-label,
+.speed-label {
     font-size: 8px;
     display: none;
 }
@@ -115,21 +125,36 @@ text {
     left: 0;
 }
 /* switch interfaces popup */
-.popup {
+#switch_popup {
     position: absolute;
+    height: 20em;
+    width: 19em;
     bottom: 2em;
     right: 2em;
+    padding: 8px;
     background-color: #fff;
-    width: 200px;
     border: 1px #ccc solid;
     border-radius: 6px;
     box-shadow: #333 2px 2px 4px;
-    padding: 8px;
     font-family: arial, helvetica, sans-serif;
+    font-size: 0.8em;
 }
-.popup h2 {
-    margin: 0 0 1rem 0;
-    font-size:20px;
+
+#switch_popup .popup_body {
+    overflow-y: scroll;
+    height: 12.5em;
+}
+
+#switch_popup .popup_body a {
+    cursor: pointer;
+}
+
+#switch_popup div.popup_header {
+    margin: 0;
+    font-size: 1.5em;
+}
+#switch_popup hr {
+    margin: 0.5em 0 1em 0;
 }
 
 /**
