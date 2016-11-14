@@ -35,3 +35,16 @@ function array_unique_fast(a) {
     }
     return out;
 }
+
+/**
+ *
+ */
+function format_speed (speed) {
+    if (speed % 1000000000 >= 0) {
+        return (speed / 1000000000) + "GB";
+    } else if (speed % 1000000 >= 0) {
+        return (speed / 1000000) + "MB";
+    } else if (speed % 1000 >= 0) {
+        return (speed / 1000) + "KB";
+    }
+}

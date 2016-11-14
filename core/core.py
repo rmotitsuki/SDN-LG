@@ -58,18 +58,16 @@ class Core(object, metaclass=Singleton):
 
     @property
     def links(self):
-        return self.links
+        return self._links
 
     @links.setter
     def links(self, my_links):
         valid = True
         if my_links is not None:
             if isinstance(my_links, collections.abc.Sequence):
-                for l in my_links:
-                    for n1, p1, n2, p2 in l:
-                        if not (isinstance(n1, Node) and isinstance(p1, Port)
-                                and isinstance(n2, Node) and isinstance(p2, Port)):
-                            valid = False
+                for p1, p2 in my_links:
+                    if not isinstance(p1, Port) and isinstance(p2, Port):
+                        valid = False
             else:
                 valid = False
         else:
@@ -77,7 +75,7 @@ class Core(object, metaclass=Singleton):
         if valid:
             self._links = my_links
         else:
-            raise CoreAttributeError('Links must be a list of (Node, Port, Node, Port) or None')
+            raise CoreAttributeError('Links must be a list of (Port, Port) or None')
 
     def send_packet(self, node, port, data):
         msg = Message()
@@ -144,7 +142,88 @@ class Core(object, metaclass=Singleton):
     def color_node(self, node, color):
         node.old_color = node.color
         node.color = color
-        
+
+
+def cube():
+    import random
+    nodes = [Node({'dpid':'0000000000000001', 'controller_id': 1, 'capabilities':'', 'n_tables':5})]
+    nodes.append(Node({'dpid':'0000000000000002', 'controller_id': 1, 'capabilities':'', 'n_tables':5}))
+    nodes.append(Node({'dpid': '0000000000000003', 'controller_id': 2, 'capabilities': '', 'n_tables': 5}))
+    nodes.append(Node({'dpid': '0000000000000004', 'controller_id': 2, 'capabilities': '', 'n_tables': 5}))
+    nodes.append(Node({'dpid': '0000000000000005', 'controller_id': 3, 'capabilities': '', 'n_tables': 5}))
+    nodes.append(Node({'dpid': '0000000000000006', 'controller_id': 1, 'capabilities': '', 'n_tables': 5}))
+    nodes.append(Node({'dpid': '0000000000000007', 'controller_id': 1, 'capabilities': '', 'n_tables': 5}))
+
+    ports = []
+    for i in range(1, 9):
+        ports.append(Port({'port_no':i, 'name': '10Gigabit{}'.format(i), 'speed':10000000000,
+                           'uptime':random.randint(0,1234567)}))
+    for i in range(9, 17):
+        ports.append(Port({'port_no':i, 'name': 'Gigabit{}'.format(i), 'speed':1000000000,
+                           'uptime':random.randint(0,1234567)}))
+    nodes[0].ports = ports
+
+    ports = []
+    for i in range(1, 17):
+        ports.append(Port({'port_no':i, 'name': '10Gigabit{}'.format(i), 'speed':10000000000,
+                           'uptime':random.randint(0,1234567)}))
+    nodes[1].ports = ports
+
+    ports = []
+    for i in range(1, 9):
+        ports.append(Port({'port_no':i, 'name': '10Gigabit{}'.format(i), 'speed':10000000000,
+                           'uptime':random.randint(0,1234567)}))
+    for i in range(9, 24):
+        ports.append(Port({'port_no': i, 'name': 'Gigabit{}'.format(i), 'speed': 1000000000,
+                           'uptime': random.randint(0, 1234567)}))
+    nodes[2].ports = ports
+
+    ports = []
+    for i in range(1, 9):
+        ports.append(Port({'port_no': i, 'name': 'Gigabit{}'.format(i), 'speed': 1000000000,
+                           'uptime': random.randint(0, 1234567)}))
+    nodes[3].ports = ports
+
+    ports = []
+    for i in range(1, 9):
+        ports.append(Port({'port_no': i, 'name': 'Gigabit{}'.format(i), 'speed': 1000000000,
+                           'uptime': random.randint(0, 1234567)}))
+    for i in range(9, 11):
+        ports.append(Port({'port_no': i, 'name': '10Gigabit{}'.format(i), 'speed': 10000000000,
+                           'uptime': random.randint(0, 1234567)}))
+    nodes[4].ports = ports
+
+    ports = []
+    for i in range(1, 17):
+        ports.append(Port({'port_no': i, 'name': 'Gigabit{}'.format(i), 'speed': 1000000000,
+                           'uptime': random.randint(0, 1234567)}))
+    nodes[5].ports = ports
+
+    ports = []
+    for i in range(1, 9):
+        ports.append(Port({'port_no': i, 'name': '10Gigabit{}'.format(i), 'speed': 10000000000,
+                           'uptime': random.randint(0, 1234567)}))
+    nodes[6].ports = ports
+
+    links = [(nodes[0].ports[2], nodes[1].ports[5]),
+             (nodes[0].ports[12], nodes[5].ports[2]),
+             (nodes[0].ports[7], nodes[6].ports[5]),
+             (nodes[1].ports[2], nodes[2].ports[3]),
+             (nodes[2].ports[21], nodes[3].ports[5]),
+             (nodes[2].ports[2], nodes[6].ports[3]),
+             (nodes[3].ports[7], nodes[4].ports[5]),
+             (nodes[4].ports[2], nodes[5].ports[5]),
+             (nodes[4].ports[9], nodes[6].ports[1])
+             ]
+
+    return nodes, links
+
+
+def cube1():
+    nodes, links = cube()
+    links[8] = (nodes[4].ports[4], nodes[2].ports[13])
+    return nodes, links
+
 
 class TopologyDiscovery:
 
@@ -154,15 +233,28 @@ class TopologyDiscovery:
         # Store to create topology
     def __init__(self, core):
         def packet_out():
-            self.send_packet_out()
-            time.sleep(PACKET_OUT_INTERVAL)
+            while True:
+                self.send_packet_out()
+                time.sleep(PACKET_OUT_INTERVAL)
+
+        def run_topology():
+            i = 0
+            while True:
+                switches, links = cube() if i % 2 == 0 else cube1()
+                self.core.switches = switches
+                self.core.links = links
+                time.sleep(20)
+                i += 1
+
         self.core = core
         self.sendPacketOut = threading.Thread(target=packet_out)
-        self.GenerateTopology = threading.Thread(RunTopology)
+        self.generate_topology = threading.Thread(target=run_topology)
+        self.generate_topology.start()
 
     def send_packet_out(self):
         print(self.core.links)
 
     def generate_topology(self):
         print(self.core.links)
+
 
