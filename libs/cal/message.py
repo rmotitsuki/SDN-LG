@@ -1,6 +1,8 @@
 """
     Messages sent/received through the MessageBroker
 """
+import libs.cal.msg_data_types as data_types
+
 
 # Possible Payloads
 ID_NEG = 0
@@ -186,7 +188,7 @@ class Body(object):
     @action.setter
     def action(self, act):
         actions = ['switch_config', 'error', 'msg_received', 'entry_removed',
-                   'add_entry', 'get_statistics', 'send_probe']
+                   'modify_entry', 'get_statistics', 'send_probe']
         if act in actions:
             self._action = act
         else:
@@ -198,7 +200,7 @@ class Body(object):
 
     @data.setter
     def data(self, dt):
-        self._data = dt
+        self._data = data_types.set_actions(self.action, dt)
 
     def validate_semantic(self, body):
         if self.header_payload in [ID_NEG, HELLO, REJECT]:

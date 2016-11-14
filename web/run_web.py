@@ -6,7 +6,7 @@ Use of Flask, a lightweight Python web framework.
 Install:
     pip install Flask
 Run:
-    python run.py
+    python run_web.py
 """
 
 

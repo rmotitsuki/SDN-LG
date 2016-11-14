@@ -23,7 +23,7 @@ class MessageBroker(object):
     MessageBroker allows the core and the controllers to exchange messages through RabbitMQ. First, it's necessary
     to create a callback method, which will be called every time a message arrives. This method must receive a single
     argument, the message being received. MessageBroker's constructor receives two arguments: the callback method and
-    a boolean, indicating if it is a controller (defaults to True, a controller, if set to False, it will be the core).
+    a boolean, indicating if it is a controllers (defaults to True, a controllers, if set to False, it will be the core).
     After creation, it will start waiting for incoming messages after start_receiving method is called, and will stop
     waiting for messages after stop_receiving is called.
     To send a message, simple call send_message passing the message as an argument.

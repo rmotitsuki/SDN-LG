@@ -47,7 +47,9 @@ def read_configs():
                    modules=read_modules_configs(),
                    openflow=read_openflow_configs(),
                    sdnlg=read_sdnlg_configs(),
-                   messagebroker=read_messagebroker_configs())
+                   messagebroker=read_messagebroker_configs(),
+                   controllers=read_controllers_configs(),
+                   snmp=read_snmp_configs())
     return configs
 
 
@@ -107,7 +109,7 @@ def read_sdnlg_configs():
             dictionary: database configs
     """
     config_file = CONFIG_PATH + "/sdnlg.conf"
-    options = ['REST_PORT', 'CONTROLLER']
+    options = ['REST_PORT', 'CONTROLLER', 'AL_SNIFFER_URL']
     dictionary = {'REST_PORT': 8080, 'CONTROLLER': 'Ryu'}
     return read_file(config_file, options, dictionary)
 
@@ -131,6 +133,20 @@ def read_messagebroker_configs():
         'EXCHANGE_CONTROLLERS': 'controllers',
     }
     return read_file(config_file, options, dictionary)
+
+
+def read_controllers_configs():
+    config_file = CONFIG_PATH + '/controllers.conf'
+    options = ['CONTROLLERS', ]
+    dictionary = {
+        'CONTROLLERS': 'ryu,localhost,6633'
+    }
+    return read_file(config_file, options, dictionary)
+
+
+def read_snmp_configs():
+    config_file = CONFIG_PATH + '/snmp.conf'
+    pass
 
 
 def read_file(config_file, options, dictionary):
@@ -165,3 +181,4 @@ def read_file(config_file, options, dictionary):
                       (variable, config_file, line_number))
         line_number += 1
     return dictionary
+
