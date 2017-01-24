@@ -1,5 +1,6 @@
 import unittest
-from libs.data.structures import Node, Port, NodeAttributeError, PortAttributeError
+
+from sdnlg.libs import Node, Port, NodeAttributeError, PortAttributeError
 
 
 class TestNodeStructure(unittest.TestCase):

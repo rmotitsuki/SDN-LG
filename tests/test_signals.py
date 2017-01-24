@@ -1,6 +1,7 @@
-import unittest, threading
-from libs.signals.signals import Signal, called_on
+import threading
+import unittest
 
+from sdnlg.libs import Signal, called_on
 
 packet_in = Signal()
 port_status = Signal()

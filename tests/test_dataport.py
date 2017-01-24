@@ -1,5 +1,6 @@
 import unittest
-from libs.cal.dataport import DataPort
+
+from shared.cal import DataPort
 
 
 class TestDataPortNo(unittest.TestCase):
