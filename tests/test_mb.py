@@ -1,6 +1,7 @@
-import unittest
 import time
-from libs.core.messagebroker import MessageBroker
+import unittest
+
+from shared.messagebroker import MessageBroker
 
 
 class Message(object):

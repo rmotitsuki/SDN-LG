@@ -1,6 +1,7 @@
-import unittest
 import time
-from core.core import Core
+import unittest
+
+from sdnlg.core.core import Core
 
 
 class TestCore(unittest.TestCase):

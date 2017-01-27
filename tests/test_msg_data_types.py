@@ -1,5 +1,6 @@
 import unittest
-from libs.cal.msg_data_types import DataSwitchConfig
+
+from shared.cal import DataSwitchConfig
 
 
 class TestDataSwitchConfig(unittest.TestCase):

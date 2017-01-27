@@ -1,5 +1,6 @@
 import unittest
-from libs.cal.message import Message, Header, Body
+
+from shared.cal import Message, Header, Body
 
 
 class TestMessageHeader(unittest.TestCase):
