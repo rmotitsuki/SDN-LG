@@ -1,6 +1,7 @@
 import unittest
-from libs.cal.message import Message
-from libs.cal.cal import CoreCal
+
+from shared.cal import CoreCal
+from shared.cal import Message
 
 
 class TestFullNegotiation(unittest.TestCase):

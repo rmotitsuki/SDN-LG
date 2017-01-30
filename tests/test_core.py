@@ -1,6 +1,6 @@
-import unittest
 import time
-from core.core import Core, SIGNAL_PACKET_IN, TopologyDiscovery
+from sdnlg.core.core import Core, SIGNAL_PACKET_IN, TopologyDiscovery
+import unittest
 
 
 class TestCore(unittest.TestCase):
