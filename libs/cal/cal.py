@@ -54,6 +54,7 @@ class CoreCal:
                 self.process_update()
 
         self.amqp = MessageBroker(process_incoming_message, False)
+        self.process_incoming_message = process_incoming_message
 
     def start_negotiation(self):
         """

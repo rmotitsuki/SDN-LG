@@ -8,7 +8,7 @@ import threading
 import time
 import collections.abc
 from libs.core.configs import read_openflow_configs
-from libs.signals.signals import Signal
+from libs.signals.signals import Signal, called_on
 from libs.utils.singleton import Singleton
 
 
@@ -76,6 +76,18 @@ class Core(object, metaclass=Singleton):
             self._links = my_links
         else:
             raise CoreAttributeError('Links must be a list of (Port, Port) or None')
+
+    def has_link(self, port1, port2):
+        for p1, p2 in self.links:
+            if p1 == port1 and p2 == port2:
+                return True
+            if p1 == port2 and p2 == port1:
+                return True
+        return False
+
+    def add_link(self, port1, port2):
+        if not self.has_link(port2, port2):
+            self.links.append((port1, port2))
 
     def send_packet(self, node, port, data):
         msg = Message()
@@ -225,7 +237,7 @@ def cube1():
     return nodes, links
 
 
-class TopologyDiscovery:
+class TopologyDiscovery(object):
 
     # Listen to switch_config
         # Send LLDP
@@ -236,6 +248,12 @@ class TopologyDiscovery:
             while True:
                 self.send_packet_out()
                 time.sleep(PACKET_OUT_INTERVAL)
+
+        @called_on(SIGNAL_PACKET_IN, weak=False)
+        def process_packet_in(pkt):
+            port1 = pkt['p1']
+            port2 = pkt['p2']
+            self.core.add_link(port1, port2)
 
         def run_topology():
             i = 0
@@ -249,7 +267,7 @@ class TopologyDiscovery:
         self.core = core
         self.sendPacketOut = threading.Thread(target=packet_out)
         self.generate_topology = threading.Thread(target=run_topology)
-        self.generate_topology.start()
+        #self.generate_topology.start()
 
     def send_packet_out(self):
         print(self.core.links)
