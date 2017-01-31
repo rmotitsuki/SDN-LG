@@ -2,13 +2,13 @@ import collections.abc
 import threading
 import time
 import time
-from libs.data.structures import Node, Port
-from libs.signals.signals import Signal
-from libs.utils.singleton import Singleton
+from sdnlg.libs.data.structures import Node, Port
+from sdnlg.libs.signals.signals import Signal
+from sdnlg.libs.utils.singleton import Singleton
 
 from sdnlg.libs.core.configs import read_openflow_configs
-from shared.cal import CoreCal
-from shared.cal import Message
+from shared.cal.cal import CoreCal
+from shared.cal.message import Message
 from shared.messagebroker import MessageBroker
 
 confs = read_openflow_configs()

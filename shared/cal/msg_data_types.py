@@ -1,4 +1,4 @@
-from shared.cal import DataPorts
+from shared.cal.dataports import DataPorts
 
 
 def set_actions(action, dt):

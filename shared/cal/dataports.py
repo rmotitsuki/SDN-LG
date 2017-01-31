@@ -1,4 +1,4 @@
-from shared.cal import DataPort
+from shared.cal.dataport import DataPort
 
 
 class DataPorts:

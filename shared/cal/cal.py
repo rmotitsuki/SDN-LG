@@ -3,10 +3,10 @@
 """
 import dill as pickle
 import time
-from libs.core.debug import debugclass
+from sdnlg.libs.core.debug import debugclass
 
 from sdnlg.libs.core.error_codes import *
-from shared.cal import Message
+from shared.cal.message import Message
 from shared.messagebroker import MessageBroker
 
 # Possible Payloads

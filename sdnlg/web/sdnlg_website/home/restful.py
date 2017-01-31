@@ -7,7 +7,7 @@ logger = logging.getLogger('web.sdnlg_website.home.restful')
 
 # Read config parameters
 _configParser = configparser.RawConfigParser()
-_configParser.read_file(open(r'sdnlg_website/configs/web.configs'))
+_configParser.read_file(open(r'sdnlg_website/conf/web.conf'))
 REST_HOST = _configParser.get('web-rest', 'REST_HOST')
 logger.debug('REST_HOST: %s' % REST_HOST)
 
