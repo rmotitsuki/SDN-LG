@@ -382,8 +382,8 @@ var ForceGraph = function(p_selector, p_data) {
                 }
                 return "visible";
             })
-            .attr("x", 8)
-            .attr("y", ".31em")
+            .attr("x", 0)
+            .attr("y", ".1em")
             .text(function(d) { if(d.label) return d.label; return d.name; });
 
         // draw link source label
