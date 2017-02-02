@@ -29,7 +29,7 @@ class DataPort:
             else:
                 raise ValueError
         except (ValueError, TypeError):
-            raise ValueError("Invalid ID: must be int from 1 to 65535")
+            raise ValueError("Invalid Port_No: must be int from 1 to 65535")
 
     @property
     def name(self):
@@ -41,7 +41,7 @@ class DataPort:
             if isinstance(name, str) and len(name) > 0:
                 self._name = name
             elif isinstance(name, int) and 0 < name <= 65535:
-                self._name = name
+                self._name = str(name)
             elif isinstance(name, bytes):
                 self._name = name.decode('latin-1')
             else:

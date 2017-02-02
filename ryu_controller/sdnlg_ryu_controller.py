@@ -5,10 +5,9 @@ from ryu.controller.handler import MAIN_DISPATCHER, CONFIG_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_0, ofproto_v1_3
 
-from ryu_controller.of13.ofswitch import OFSwitch13
 from ryu_controller.of10.ofswitch import OFSwitch10
-
-from shared.cal.message import Message
+from ryu_controller.of13.ofswitch import OFSwitch13
+from shared.message_cal import Message
 from shared.messagebroker import MessageBroker
 
 

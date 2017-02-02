@@ -4,7 +4,7 @@ from shared.cal.dataport import DataPort
 class DataPorts:
 
     def __init__(self, ports):
-        self._dports = dict()
+        self._dports = None
         self._instantiate_vars(ports)
 
     def _instantiate_vars(self, ports):
@@ -37,12 +37,12 @@ class DataPorts:
 
     def get_port_by_number(self, port):
         for dport in self.dports:
-            if dport.id == port:
-                return dport
-        return '0'
+            if self.dports[dport].port_no == port:
+                return self.dports[dport]
+        return 0
 
     def get_port_by_name(self, port):
         for dport in self.dports:
-            if dport.name == port:
-                return dport
-        return 0
+            if self.dports[dport].name == port:
+                return self.dports[dport]
+        return '0'

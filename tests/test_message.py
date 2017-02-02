@@ -1,6 +1,6 @@
 import unittest
 
-from shared.cal.message import Message, Header, Body
+from shared.message_cal import Message, Header, Body
 
 
 class TestMessageHeader(unittest.TestCase):
@@ -99,9 +99,9 @@ class TestMessageBody(unittest.TestCase):
     def setUp(self):
         self.payload = 1
         self.my_body = dict()
-        self.port = {'port_no': 1, 'name': 'eth3/1', 'status': 'added', 'speed': '100Gbps'}
-        self.ports = []
-        self.ports.append(self.port)
+        self.port = {'port_no': 1, 'name': 'eth3/1', 'reason': 'added', 'speed': '100Gbps', 'state': 'up'}
+        self.ports = {}
+        self.ports[1] = self.port
         self.action = {'n_tbls': 1, 'caps': 1, 'proto': 'OpenFlow1.0', 'ports': self.ports}
 
     # For default payload = 0, Test message.body.suggested_id

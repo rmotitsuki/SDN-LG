@@ -1,20 +1,20 @@
 import unittest
 
-from shared.cal import DataPort
-from shared.cal import DataPorts
+from shared.cal.dataport import DataPort
+from shared.cal.dataports import DataPorts
 
 
 class TestDataPorts(unittest.TestCase):
 
     def setUp(self):
-        self.ports = []
-        self.port1 = {'port_no': 1, 'name': 'a', 'status': 'added', 'speed': '1G'}
-        self.ports.append(self.port1)
-        self.port2 = {'port_no': 2, 'name': 'b', 'status': 'deleted', 'speed': '1G'}
-        self.ports.append(self.port2)
+        self.ports = {}
+        self.port1 = {'port_no': 1, 'name': 'a', 'reason': 'added', 'speed': '1G', 'state': 'up'}
+        self.ports[1] = self.port1
+        self.port2 = {'port_no': 2, 'name': 'b', 'reason': 'deleted', 'speed': '1G', 'state': 'down'}
+        self.ports[2] = self.port2
 
-        self.wrong_values = [{}, [], 'a', 0, -1, 100000]
-        self.right_values = [self.ports]
+        self.wrong_values = [[], 'a', 0, -1, 100000]
+        self.right_values = [self.ports, {}]
 
     def test_wrong_values(self):
 
@@ -27,20 +27,12 @@ class TestDataPorts(unittest.TestCase):
         for right_value in self.right_values:
             self.assertTrue(DataPorts(right_value))
 
-
     def test_right_get_port(self):
         self.message = DataPorts(self.ports)
         self.assertTrue(isinstance(self.message.get_port('a'), DataPort))
         self.assertTrue(isinstance(self.message.get_port('b'), DataPort))
         self.assertTrue(isinstance(self.message.get_port(1), DataPort))
         self.assertTrue(isinstance(self.message.get_port(2), DataPort))
-
-    def test_invalid_get_port(self):
-        self.message = DataPorts(self.ports)
-
-        for wrong_value in ['c', {}, 3, '']:
-            with self.assertRaises(ValueError):
-                self.message = DataPorts(wrong_value)
 
 
 if __name__ == '__main__':
