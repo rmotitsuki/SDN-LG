@@ -45,7 +45,7 @@ class OFSwitch10:
                     curr = get_port_speed(port.curr)
                     state = get_port_state(port.state, port.config)
                     ports[port.port_no] = {"port_no": port.port_no,
-                                           "name": port.name,
+                                           "name": port.name.decode('latin-1'),
                                            "reason": 'added',
                                            "state": state,
                                            "speed": curr}
@@ -64,7 +64,7 @@ class OFSwitch10:
             reason = "modified"
         state = get_port_state(msg.desc.state, msg.desc.config)
         curr = get_port_speed(msg.desc.curr)
-        port = {"id": port_no, "name": msg.desc.name, "reason": reason,
+        port = {"port_no": port_no, "name": msg.desc.name.decode('latin-1'), "reason": reason,
                 "state": state, "speed": curr}
         self.switch_conf['ports'][port_no] = port
         self.switch_conf['reason'] = "modified"

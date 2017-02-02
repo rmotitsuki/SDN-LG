@@ -16,8 +16,7 @@ class MyBroker(object):
     def notify_core(msg):
         # Temp while the RabbitMQ does get finished
 
-        print("Send to RMQ: %s" % msg)
-
+        print("data: %s" % msg)
         # format full Message support
         ipp = "192.168.56.1:6633"
         header = {"version": 1, "id": 1, "payload": 3, "timing": 1, "ipp": ipp}
@@ -25,7 +24,7 @@ class MyBroker(object):
         message['header'] = header
         message['body'] = msg
         to_send = Message(message)
-        print(to_send)
+        print("Send to RMQ: Message: %s" % (to_send.__dict__))
 
 
 class RyuController(app_manager.RyuApp):
@@ -60,7 +59,7 @@ class RyuController(app_manager.RyuApp):
     def get_switch(self, datapath):
         for dpid, switch in self.switches.items():
             if switch.obj.msg.datapath == datapath:
-                return switch.dpid
+                return int(switch.dpid)
         return False
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
