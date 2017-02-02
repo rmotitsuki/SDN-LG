@@ -3,8 +3,8 @@ import logging
 import pika
 import time
 from threading import Thread
-
 from sdnlg.libs.core.configs import read_messagebroker_configs
+
 
 logger = logging.getLogger('libs.core.messagebroker')
 confs = read_messagebroker_configs()
@@ -139,7 +139,7 @@ class MessageBroker(object):
         channel = conn.channel()
         channel.exchange_declare(exchange=self.exchange_send, type='fanout')
         serialized = pickle.dumps(msg)
-
         logger.debug('Sending message to {}'.format(self.exchange_send))
+
         channel.basic_publish(exchange=self.exchange_send, routing_key='', body=serialized)
         conn.close()

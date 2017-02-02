@@ -9,22 +9,26 @@ from ryu_controller.of13.ofswitch import OFSwitch13
 from ryu_controller.of10.ofswitch import OFSwitch10
 
 from shared.cal.message import Message
+from shared.messagebroker import MessageBroker
+
 
 class MyBroker(object):
 
-    @staticmethod
-    def notify_core(msg):
-        # Temp while the RabbitMQ does get finished
+    def __init__(self):
+        def listener_core(msg):
+            print(msg)
 
-        print("data: %s" % msg)
-        # format full Message support
-        ipp = "192.168.56.1:6633"
-        header = {"version": 1, "id": 1, "payload": 3, "timing": 1, "ipp": ipp}
-        message = dict()
-        message['header'] = header
-        message['body'] = msg
-        to_send = Message(message)
-        print("Send to RMQ: Message: %s" % (to_send.__dict__))
+        self.mb = MessageBroker(listener_core, controller=False)
+        self.message = dict()
+        self.header = {"version": 1, "id": 1, "payload": 3,
+                       "timing": 1, "ipp": "192.168.56.1:6633"}
+        self.message['header'] = self.header
+
+    def notify_core(self, msg):
+        self.message['body'] = msg
+        to_send = Message(self.message)
+        print("Send to RMQ: \nMsg: %s \nMessage: %s" % (msg, to_send.__dict__))
+        self.mb.send_message(to_send)
 
 
 class RyuController(app_manager.RyuApp):
