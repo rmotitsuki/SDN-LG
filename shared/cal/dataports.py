@@ -4,7 +4,7 @@ from shared.cal.dataport import DataPort
 class DataPorts:
 
     def __init__(self, ports):
-        self._dports = []
+        self._dports = dict()
         self._instantiate_vars(ports)
 
     def _instantiate_vars(self, ports):
@@ -16,14 +16,14 @@ class DataPorts:
 
     @dports.setter
     def dports(self, ports):
-        temp = []
-        if isinstance(ports, list):
+        temp = dict()
+        if isinstance(ports, dict):
             if len(ports) > 0:
                 for port in ports:
-                    temp.append(DataPort(port))
+                    temp[port] = DataPort(ports[port])
                 self._dports = temp
             else:
-                self._dports = []
+                self._dports = dict()
         else:
             raise ValueError('Invalid Ports Value provided')
 

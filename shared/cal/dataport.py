@@ -2,28 +2,30 @@
 class DataPort:
 
     def __init__(self, port):
-        self._id = None
+        self._port_no = None
         self._name = None
-        self._status = None
+        self._reason = None
         self._speed = None
+        self._state = None
 
         self._instantiate_vars(port)
 
     def _instantiate_vars(self, port):
-        self.id = port['port_no']
+        self.port_no = port['port_no']
         self.name = port['name']
-        self.status = port['status']
+        self.reason = port['reason']
         self.speed = port['speed']
+        self.state = port['state']
 
     @property
-    def id(self):
-        return self._id
+    def port_no(self):
+        return self._port_no
 
-    @id.setter
-    def id(self, port_no):
+    @port_no.setter
+    def port_no(self, port_no):
         try:
             if 1 <= int(port_no) <= 65535:
-                self._id = int(port_no)
+                self._port_no = int(port_no)
             else:
                 raise ValueError
         except (ValueError, TypeError):
@@ -40,24 +42,26 @@ class DataPort:
                 self._name = name
             elif isinstance(name, int) and 0 < name <= 65535:
                 self._name = name
+            elif isinstance(name, bytes):
+                self._name = name.decode('latin-1')
             else:
                 raise ValueError
         except (ValueError, AttributeError):
             raise ValueError("Invalid Name: can not be empty")
 
     @property
-    def status(self):
-        return self._status
+    def reason(self):
+        return self._reason
 
-    @status.setter
-    def status(self, status):
+    @reason.setter
+    def reason(self, reason):
         try:
-            if status in ['added', 'deleted', 'modified']:
-                self._status = status
+            if reason in ['added', 'deleted', 'modified']:
+                self._reason = reason
             else:
                 raise ValueError
         except ValueError:
-            raise ValueError("Invalid status: (%s)" % status)
+            raise ValueError("Invalid reason: (%s)" % reason)
 
     @property
     def speed(self):
@@ -73,3 +77,16 @@ class DataPort:
         except (ValueError, TypeError):
             raise ValueError("Invalid speed: can not be empty")
 
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        try:
+            if state in ['up', 'down']:
+                self._state = state
+            else:
+                raise ValueError
+        except (ValueError, TypeError):
+            raise ValueError("Invalid state: (%s)" % state)

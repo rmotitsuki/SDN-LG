@@ -1,6 +1,6 @@
 import unittest
 
-from shared.cal import Message, Header, Body
+from shared.cal.message import Message, Header, Body
 
 
 class TestMessageHeader(unittest.TestCase):
@@ -189,9 +189,9 @@ class TestFullMessagePayloadUpdate(unittest.TestCase):
     def setUp(self):
         self.err_msgs = []
         self.ok_msgs = []
-        self.port = {'port_no': 1, 'name': 'eth3/1', 'status': 'added', 'speed': '100Gbps'}
-        self.ports = []
-        self.ports.append(self.port)
+        self.port = {'port_no': 1, 'name': 'eth3/1', 'reason': 'added', 'speed': '100Gbps', 'state': 'up'}
+        self.ports = dict()
+        self.ports[1] = self.port
         self.action = {'n_tbls': 1, 'caps': 1, 'proto': 'OpenFlow1.0', 'ports': self.ports}
 
         ipp = "1.1.1.1:1"
@@ -207,6 +207,7 @@ class TestFullMessagePayloadUpdate(unittest.TestCase):
 
         # Ok messages
         update = {"action": 'switch_config', "data": self.action, "dpid": "0"}
+        #
         self.ok_msgs.append({"header": header, "body": update})
         header['id'] = 255
         self.ok_msgs.append({"header": header, "body": update})

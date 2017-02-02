@@ -5,45 +5,57 @@ from ryu.controller.handler import MAIN_DISPATCHER, CONFIG_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_0, ofproto_v1_3
 
-from ryu_controller import OFSwitch10
-from ryu_controller import OFSwitch13
+from ryu_controller.of13.ofswitch import OFSwitch13
+from ryu_controller.of10.ofswitch import OFSwitch10
+
+from shared.cal.message import Message
+
+class MyBroker(object):
+
+    @staticmethod
+    def notify_core(msg):
+        # Temp while the RabbitMQ does get finished
+
+        print("Send to RMQ: %s" % msg)
+
+        # format full Message support
+        ipp = "192.168.56.1:6633"
+        header = {"version": 1, "id": 1, "payload": 3, "timing": 1, "ipp": ipp}
+        message = dict()
+        message['header'] = header
+        message['body'] = msg
+        to_send = Message(message)
+        print(to_send)
 
 
-class SDNLG(app_manager.RyuApp):
+class RyuController(app_manager.RyuApp):
 
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION, ofproto_v1_3.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
-        super(SDNLG, self).__init__(*args, **kwargs)
-        # Start communication to Core system
-        self.msgbroker = self.cal_negotiate_id()
-        # Dictionary of Nodes connected indexed by DPID
+        super(RyuController, self).__init__(*args, **kwargs)
         self.switches = dict()
-        # Run it!
+        self.mbroker = MyBroker()
         print("SDN-LG Ryu controller started!")
-
-    def cal_negotiate_id(self):
-        # Instantiate the RabbitMQ class
-
-        # Negotiate ID
-
-        #
-        return 0
 
     def instantiate_switch(self, ev):
         if ev.msg.version == 1:
             return OFSwitch10(ev)
         elif ev.msg.version == 4:
             return OFSwitch13(ev)
-        else:
-            print("OpenFlow version %s is not supported" % ev.msg.version)
-            return False
+        return False
 
-    def add_switch_to_list(self, ev):
+    def add_switch(self, ev):
         self.switches[ev.msg.datapath_id] = self.instantiate_switch(ev)
+        self.mbroker.notify_core(self.switches[ev.msg.datapath_id].body_data)
 
-    def del_switch_from_list(self, ev):
-        self.switches.pop(self.get_switch(ev.datapath))
+    def del_switch(self, ev):
+        dpid = self.get_switch(ev.datapath)
+        if dpid:
+            switch = self.switches[dpid]
+            switch.process_remove_switch()
+            self.mbroker.notify_core(switch.body_data)
+            self.switches.pop(self.get_switch(ev.datapath))
 
     def get_switch(self, datapath):
         for dpid, switch in self.switches.items():
@@ -53,22 +65,17 @@ class SDNLG(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
-        print("EventOFPSwitchFeatures")
-        self.add_switch_to_list(ev)
+        self.add_switch(ev)
 
     @set_ev_cls(ofp_event.EventOFPStateChange, DEAD_DISPATCHER)
     def remove_switch(self, ev):
-        print("EventOFPStateChange")
-        dpid = self.get_switch(ev.datapath)
-        if dpid:
-            switch = self.switches[dpid]
-            switch.process_remove_switch(ev)
-            self.del_switch_from_list(ev)
+        self.del_switch(ev)
 
     @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)
     def port_status(self, ev):
         switch = self.switches[self.get_switch(ev.msg.datapath)]
         switch.process_port_status(ev)
+        self.mbroker.notify_core(switch.body_data)
 
     @set_ev_cls(ofp_event.EventOFPFlowRemoved, MAIN_DISPATCHER)
     def flow_removed(self, ev):
