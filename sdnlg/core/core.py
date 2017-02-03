@@ -1,13 +1,13 @@
 import collections.abc
 import threading
 import time
-from libs.signals.signals import Signal, called_on
-from libs.data.structures import Node, Port
-from libs.utils.singleton import Singleton
+from sdnlg.libs.signals.signals import Signal, called_on
+from sdnlg.libs.data.structures import Node, Port
+from sdnlg.libs.utils.singleton import Singleton
 
 from sdnlg.libs.core.configs import read_openflow_configs
-from shared.cal import CoreCal
-from shared.cal import Message
+from shared.cal.cal import CoreCal
+from shared.cal.cal import Message
 from shared.messagebroker import MessageBroker
 
 confs = read_openflow_configs()
@@ -25,7 +25,7 @@ class CoreAttributeError(Exception):
 
 class Core(object, metaclass=Singleton):
     """
-    The Core class. Controls the communication between the vaious modules of the SDN-LG. It is a Singleton.
+    The Core class. Controls the communication between the various modules of the SDN-LG. It is a Singleton.
     """
     def __init__(self):
 
@@ -139,6 +139,54 @@ class Core(object, metaclass=Singleton):
             self.add_switch(dpid, controller_id, data)
         else:
             self.update_switch(s, dpid, controller_id, data)
+
+    def packet_out(self, node, port, data, lldp=False):
+        """
+        Sends PacketOut
+        Args:
+            node: node that will send te PacketOut
+            port: port to send PacketOut
+            data: Ethernet frame to be sent
+            lldp: if it is a LLDP packet
+
+        """
+        rid = node.controller_id
+        payload = {'dpid': node.dpid,
+                   'action': 'send_probe',
+                   'data': data}
+
+        self._cal.send_msg(rid, 3, payload)
+
+    def add_flow(self, node, match, actions):
+        """
+        Adds a flow to the node
+        Args:
+            node:
+            match:
+            actions:
+
+        Returns:
+
+        """
+        rid = node.controller_id
+        payload = {'dpid': node.dpid,
+                   'action': 'add_entry',
+                   'data': {'match': match},
+                   }
+        self._cal.send_msg(rid, 3, payload)
+
+    def stats_request(self, node, type, body={}):
+        """
+        Get statistics from the node
+        Args:
+            node:
+            type:
+            body:
+
+        Returns:
+
+        """
+        pass
 
     def get_stats(self):
         pass
