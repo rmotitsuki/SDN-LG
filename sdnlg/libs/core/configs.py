@@ -124,7 +124,7 @@ def read_messagebroker_configs():
     options = ['RABBITMQ_HOST', 'RABBITMQ_PORT', 'RABBITMQ_USER', 'RABBITMQ_PASS', 'WAIT_TIME', 'EXCHANGE_CORE',
                'EXCHANGE_CONTROLLERS']
     dictionary = {
-        'RABBITMQ_HOST': 'localhost',
+        'RABBITMQ_HOST': '127.0.0.1',
         'RABBITMQ_PORT': 5672,
         'RABBITMQ_USER': 'guest',
         'RABBITMQ_PASS': 'guest',

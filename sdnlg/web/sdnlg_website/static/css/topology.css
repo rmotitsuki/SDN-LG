@@ -103,7 +103,8 @@ text {
 .target-label,
 .source-label,
 .speed-label {
-    font-size: 8px;
+    font-size: 10px;
+    font-weight: bold;
     display: none;
 }
 .canvas {

@@ -1,14 +1,14 @@
 import unittest
 
-from shared.cal import DataSwitchConfig
+from shared.cal.msg_data_types import DataSwitchConfig
 
 
 class TestDataSwitchConfig(unittest.TestCase):
 
     def setUp(self):
         self.sw_config = {'n_tbls': 1, 'caps': 1, 'proto': 'OpenFlow1.0',
-                          'ports': [{'port_no': 1, 'name': 'a', 'speed': '1g',
-                                     'status': 'added'}]}
+                          'ports': {1: {'port_no': 1, 'name': 'a', 'speed': '1g',
+                                     'reason': 'added', 'state': 'up'}}}
 
     # Test number of tables
     def test_wrong_values_n_tbls(self):

@@ -1,4 +1,4 @@
-from shared.cal import DataPorts
+from shared.cal.dataports import DataPorts
 
 
 def set_actions(action, dt):
@@ -12,7 +12,8 @@ def set_actions(action, dt):
     try:
         clss = actions[action]
         return clss(dt)
-    except ValueError:
+    except ValueError as e:
+        # print(e)
         raise ValueError
 
 

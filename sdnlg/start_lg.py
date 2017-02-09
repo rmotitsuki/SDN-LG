@@ -3,9 +3,9 @@
 """
 
 
-import libs.core.configs
-from core.core import Core, TopologyDiscovery
-from rest.restful import app
+import sdnlg.libs.core.configs
+from sdnlg.core.core import Core, TopologyDiscovery
+from sdnlg.rest.restful import app
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 
-from web.sdnlg_website import app
+from sdnlg.web.sdnlg_website import app
 """
 Use of Flask, a lightweight Python web framework.
 

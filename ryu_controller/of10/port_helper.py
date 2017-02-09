@@ -1,6 +1,9 @@
-def get_port_state(state):
-    states = [1, 2, 4, 8, 16]
-    return parse_bitmask(state, states)
+
+
+def get_port_state(state, config):
+    if state == 0 and config == 0:
+            return 'up'
+    return 'down'
 
 
 def get_port_speed(curr):
@@ -19,15 +22,7 @@ def get_phy_speed(speed):
     try:
         return bws[speed[0]]
     except KeyError:
-        return 'UnknownSpeed(%s)' % speed[0]
-
-
-def get_phy_state(state):
-    state = {1: 'LinkDown(0x1)'}
-    try:
-        return state[state[0]]
-    except KeyError:
-        return 'UnknownState(%s)' % state
+        return 'OtherSpeed(%s)' % speed[0]
 
 
 def parse_bitmask(bitmask, array):

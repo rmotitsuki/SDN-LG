@@ -57,13 +57,26 @@ var SPEED_100GB = 100000000000;
 var SPEED_10GB = 10000000000;
 var SPEED_1GB = 1000000000;
 
+
+
+var SIZE = {'switch': 16,
+            'port': 8,
+            'host': 10};
+
+var DISTANCE = {'switch': 15 * SIZE['switch'],
+                'port': SIZE['switch'] + 16,
+                'host': 1 * SIZE['port']};
+
+
+
+
 /**
 This is the class that will create a graph.
 */
-var ForceGraph = function(selector, data) {
+var ForceGraph = function(p_selector, p_data) {
     // Local variable representing the forceGraph data
     var _data = ''
-    _data = data
+    _data = p_data
 
 
 
@@ -103,11 +116,6 @@ var ForceGraph = function(selector, data) {
     var width = 960,
         height = 600;
 
-    // gray color like 'disabled' color
-    var default_node_color = "#ccc";
-    var default_link_color = "#888";
-
-    var highlight_color = "#4D7C9D";
     var highlight_trans = 0.1;
     // highlight var helpers
     // highlight var helpers
@@ -120,32 +128,37 @@ var ForceGraph = function(selector, data) {
     var outline = false;
 
     // node/circle size
-    var size = d3.scale.pow().exponent(1)
+    var size = d3.scaleLinear()
       .domain([1,100])
       .range([8,24]);
     var nominal_base_node_size = 8;
     var nominal_stroke = 1.5;
 
-    var linkedByIndex = {};
+    var _linkedByIndex = {};
+
+    function addConnection(a, b) {
+        _linkedByIndex[a + "," + b] = true;
+    }
 
 	function isConnected(a, b) {
-        return linkedByIndex[a.dpid + "," + b.dpid] || linkedByIndex[b.dpid + "," + a.dpid] || a.dpid == b.dpid;
+        return _linkedByIndex[a.dpid + "," + b.dpid] || _linkedByIndex[b.dpid + "," + a.dpid] || a.dpid == b.dpid;
     }
 
 	function hasConnections(a) {
-		for (var property in linkedByIndex) {
+		for (var property in _linkedByIndex) {
             s = property.split(",");
-            if ((s[0] == a.index || s[1] == a.index) && linkedByIndex[property])
+            if ((s[0] == a.index || s[1] == a.index) && _linkedByIndex[property])
                 return true;
 		}
 	    return false;
 	}
 
-    var zoomed = function() {
-        container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    // zoom behavior
+    var zoomed = function(d) {
+        container.attr("transform", "translate(" + d3.event.transform.x + "," + d3.event.transform.y + ")scale(" + d3.event.transform.k + ")");
     }
-
-    var zoom = d3.behavior.zoom()
+    // zoom configuration
+    var zoom = d3.zoom()
         .scaleExtent([min_zoom, max_zoom])
         .on("zoom", zoomed);
 /*
@@ -163,17 +176,14 @@ var ForceGraph = function(selector, data) {
         .call(zoom);
         ;
     */
-    var svg = d3.select(selector).append("svg")
+    var svg = d3.select(p_selector).append("svg")
         .attr("width", width)
         .attr("height", height)
-        .call(zoom);;
+        .call(zoom);
 
     var container = svg.append("g");
 
-    // Create the initial svg element and the utilities you will need.
-    // These are the actions that won't be necessary on update.
-    // For example creating the axis objects, your variables, or the svg container
-
+    // ForceGraph set data. Remember to redraw the simulation after the set.
     this.data = function(value) {
         if ( typeof value === 'undefined') {
             // accessor
@@ -191,18 +201,6 @@ var ForceGraph = function(selector, data) {
         // setting node color labels and color
         var temp_nodes = [];
 
-        for (var x in force_nodes) {
-            for (var y in _data.nodes_data) {
-                if (force_nodes[x].name == _data.nodes_data[y].name) {
-                    force_nodes[x].background_color = _data.nodes_data[y].color.background;
-                    force_nodes[x].label = _data.nodes_data[y].label;
-
-                    if (_data.nodes_data[y].borderWidth) {
-                        force_nodes[x].stroke_width = _data.nodes_data[y].borderWidth;
-                    }
-                }
-            }
-        }
 
         // setting edge color
         for (var x in _data.links) {
@@ -223,48 +221,32 @@ var ForceGraph = function(selector, data) {
 
         for (var x in _data.links) {
             // setting highlight helper
-            linkedByIndex[_data.links[x].source.dpid + "," + _data.links[x].target.dpid] = true;
+            addConnection(_data.links[x].source.id, _data.links[x].target.id);
         }
 
-        var force = d3.layout.force()
-            .nodes(force_nodes)
-            .links(_data.links)
-            .size([width, height])
-            .linkDistance(120)
-            .linkStrength(0.5)
-            .charge(-300)
-            .on("tick", tick)
-            .start();
+        var force = d3.forceSimulation(_data.nodes)
+            .force("link",
+                d3.forceLink()
+                    .id(function(d) { return d.id })
+                    .distance(function(d) {
+                        if (d.edgetype == 's_p') {
+                            return 0;
+                        }
+                        return DISTANCE['switch'];
+                    })
+                    .strength(0.5)
+            )
+            .force("charge", d3.forceManyBody().strength(-40))
+            .force("center", d3.forceCenter(width / 2, height / 2));
         // reconfigure drag, so switch drag take precedence over panning
-/*
-        var drag = force.drag();
-            //.on("dragstart", dragstarted)
-            //.on("drag", dragged)
-            //.on("dragend", dragended);
-        function dragstarted(d) {
-          d3.event.sourceEvent.stopPropagation();
-          d3.select(this).classed("dragging", true);
-        }
-
-        function dragged(d) {
-            //poc: check the translation.
-            //d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
-        }
-
-        function dragended(d) {
-          d3.select(this).classed("dragging", false);
-        }
-*/
         // Per-type markers, as they don't inherit styles.
 
-
-        // Clear nodes and paths
-        //container.selectAll("g").remove();
-
         // draw link paths
-        var path = container.append("g").selectAll("path")
-            .data(force.links())
-            .enter().append("svg:path")
+        var path = container.append("g")
+            .attr("class", "paths")
+            .selectAll("path")
+            .data(_data.links)
+            .enter().append("line")
             .attr("class", function(d) {
                 var return_var = "";
                 if (d.speed >= SPEED_100GB) {
@@ -277,52 +259,106 @@ var ForceGraph = function(selector, data) {
                 return_var = return_var + " link " + d.type;
                 return return_var;
             })
-            .attr("stroke", function(d) { return d.color; })
+            .style("stroke", function(d) {
+                if (d.edgetype == 's_p') {
+                    return '#fff';
+                }
+                return d.color;
+            })
             .attr("marker-end", function(d) { return "url(#" + d.type + ")"; });
 
 
+        var nodeDragstarted = function (d) {
+            if (d.type == 'port') { return " node_port"; }
+            if (!d3.event.active) force.alphaTarget(0.3).restart()
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        var nodeDragged = function (d) {
+            if (d.type == 'port') { return " node_port"; }
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+
+        var nodeDragended = function (d) {
+            if (d.type == 'port') { return " node_port"; }
+            if (!d3.event.active) force.alphaTarget(0);
+            focus_node = null;
+            exit_highlight(d);
+            // reset fixed coordinates to dynamic
+            // d.fx = null;
+            // d.fy = null;
+        }
+
+        var is_mousedown = false;
         // switch draw
-        var node = container.selectAll(".node")
-            .data(force.nodes())
-            .enter().append("g")
-            .attr("class", "node")
-            .on('contextmenu', d3.contextMenu(menu)) // attach menu to element
-            .call(force.drag);
+        var node = container
+            .append("g")
+            .attr("class", "nodes")
+            .selectAll("circle")
+            .data(_data.nodes)
+            .enter().append("circle")
+                //teste
+                .attr("r", function(d) { return SIZE[d.type]||nominal_base_node_size; })
+                .attr("fill", function(d) {
+                    return d.background_color; })
+                .style(tocolor, function(d) {
+                    return d.background_color; })
+                .attr("class", function(d) {
+                    if (d.type == 'port') {
+                        return " node_port";
+                    }
+                    return "";
+                })
+                .style("visibility", function(d) {
+                    if (d.type == 'port') {
+                        return "hidden";
+                    }
+                    return "visible";
+                })
+                .on('contextmenu', d3.contextMenu(menu)) // attach menu to element
 
-        node.on("dblclick.zoom", function(d) {
-            d3.event.stopPropagation();
-            var dcx = (window.innerWidth/2-d.x*zoom.scale());
-            var dcy = (window.innerHeight/2-d.y*zoom.scale());
-            zoom.translate([dcx,dcy]);
-             g.attr("transform", "translate("+ dcx + "," + dcy  + ")scale(" + zoom.scale() + ")");
-        });
-
-        // node mouse highlight
-	    node.on("mouseover", function(d) {
-              set_highlight(d);
-          })
-          .on("mousedown", function(d) {
-              // stop global drag and force node drag
-              d3.event.stopPropagation();
-              // focus_node to control highlight events
-              focus_node = d;
-              set_focus(d)
-	          if (highlight_node === null) set_highlight(d)
-          })
-          .on("mouseout", function(d) {
-              exit_highlight();
-        });
-        d3.select(window).on("mouseup", function() {
-            if (focus_node!==null) {
-                focus_node = null;
-                if (highlight_trans < 1) {
-                    circle.style("opacity", 1);
-                    text.style("opacity", 1);
-                    path.style("opacity", 1);
-                }
-            }
-            if (highlight_node === null) exit_highlight();
-        });
+                .on("mouseover", function(d) {
+                    if (d.type == 'port') {
+                        return;
+                    }
+                    if (d.type == 'switch') {
+                        set_highlight(d);
+                    }
+                })
+                .on("mousedown", function(d) {
+                    d3.event.stopPropagation();
+                    if (d.type == 'port') {
+                        return;
+                    }
+                    // focus_node to control highlight events
+                    focus_node = d;
+                    set_focus(d)
+                    //if (highlight_node === null) set_highlight(d)
+                })
+                .on("mouseout", function(d) {
+                    if (d.type == 'port') {
+                        return;
+                    }
+                    if (focus_node === null) {
+                        exit_highlight(d);
+                    }
+                })
+                .on("click", function(d) {
+                    if (d.type == 'port') {
+                        return;
+                    }
+                    focus_node = null;
+                    exit_highlight(d);
+                })
+                .on("dblclick.zoom", function(d) {
+                    d3.event.stopPropagation();
+                })
+                .call(d3.drag()
+                    .on("start", nodeDragstarted)
+                    .on("drag", nodeDragged)
+                    .on("end", nodeDragended));
 
     	var tocolor = "fill";
         var towhite = "stroke";
@@ -330,89 +366,85 @@ var ForceGraph = function(selector, data) {
             tocolor = "stroke"
             towhite = "fill"
         }
-
-        var circle = node.append("path")
-          .attr("d", d3.svg.symbol()
-            .size(function(d) { return Math.PI*Math.pow(size(6)||nominal_base_node_size,2); }))
-          .style(tocolor, function(d) {
-            return d.background_color; })
-            //.attr("r", function(d) { return size(d.size)||nominal_base_node_size; })
-          .style("stroke-width", nominal_stroke)
-          .style(towhite, "white");
-
-
-
-        /*
-        container.selectAll("circle")
-            .on("click", function(){
-                d3.select(this).attr('r', 25)
-                .style("fill","lightcoral")
-                .style("stroke","red");
-            });
-        */
-
         // draw switch label
         var text = container.append("g").selectAll("text")
-            .data(force.nodes())
+            .data(_data.nodes)
             .enter().append("text")
-            .attr("x", 8)
-            .attr("y", ".31em")
+            .attr("class", function(d) {
+                if (d.type == 'port') {
+                    return "node_text text_port";
+                }
+                return "node_text";
+            })
+            .style("visibility", function(d) {
+                if (d.type == 'port') {
+                    return "hidden";
+                }
+                return "visible";
+            })
+            .attr("x", 0)
+            .attr("y", ".1em")
             .text(function(d) { if(d.label) return d.label; return d.name; });
 
         // draw link source label
-        var source_label = container.append("g")
-            .selectAll("text")
-            .data(force.links())
-            .enter().append("text")
-            .attr("class", "source-label")
-            .text(function(d) { return d.source_label.name; });
-
-        // draw link target label
-        var target_label = container.append("g").selectAll("text")
-           .data(force.links())
-           .enter().append("text")
-           .attr("class", "target-label")
-           .text(function(d) { return d.target_label.name; });
+//        var source_label = container.append("g")
+//            .selectAll("text")
+//            .data(force.links())
+//            .enter().append("text")
+//            .attr("class", "source-label")
+//            .text(function(d) { return d.source_label.num; });
+//
+//        // draw link target label
+//        var target_label = container.append("g").selectAll("text")
+//           .data(force.links())
+//           .enter().append("text")
+//           .attr("class", "target-label")
+//           .text(function(d) { return d.target_label.num; });
 
         // draw link label
         var link_label = container.append("g").selectAll("text")
-            .data(force.links())
+            .data(_data.links)
             .enter().append("text")
             .attr("class", "speed-label")
             .text(function(d) {
                 return format_speed(d.speed);
             });
 
-        // Use elliptical arc path segments to doubly-encode directionality.
-        function tick() {
-            path.attr("d", linkArc);
-            node.attr("transform", transform);
-            text.attr("transform", transform);
-            source_label.attr("transform", transformLinkSourceLabel);
-            target_label.attr("transform", transformLinkTargetLabel);
-            link_label.attr("transform", transformLinkLabel);
-        }
-
         function linkArc(d) {
-            var dx = d.target.x - d.source.x,
-                dy = d.target.y - d.source.y;
-                //dr = Math.sqrt(dx * dx + dy * dy);
-                //return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
-            return "M" + d.source.x + "," + d.source.y + "L" + d.target.x + "," + d.target.y;
+            path
+                .attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; });
         }
 
         function transform(d) {
             return "translate(" + d.x + "," + d.y + ")";
         }
+
+        function transformNode(d) {
+            return_val = '';
+            if (d.type == "port") {
+                new_positions = radius_positioning(d.from_sw.x, d.from_sw.y, d.to_sw.x, d.to_sw.y);
+                dx = new_positions[0];
+                dy = new_positions[1];
+                return_val = "translate(" + dx + "," + dy + ")";
+            } else {
+                return_val = "translate(" + d.x + "," + d.y + ")";
+            }
+            return return_val;
+        }
         function transformLinkSourceLabel(d) {
-            dx = (d.target.x - d.source.x) * 0.2;
-            dy = (d.target.y - d.source.y) * 0.2;
-            return "translate(" + (d.source.x + dx) + "," + (d.source.y + dy) + ")";
+            new_positions = radius_positioning(d.source.x, d.source.y, d.target.x, d.target.y);
+            dx = new_positions[0] - SIZE['port'];
+            dy = new_positions[1] + SIZE['port']/2.0;
+            return "translate(" + dx + "," + dy + ")";
         }
         function transformLinkTargetLabel(d) {
-            dx = (d.source.x - d.target.x) * 0.2;
-            dy = (d.source.y - d.target.y) * 0.2;
-            return "translate(" + (d.target.x + dx) + "," + (d.target.y + dy) + ")";
+            new_positions = radius_positioning(d.target.x, d.target.y, d.source.x, d.source.y);
+            dx = new_positions[0]
+            dy = new_positions[1]
+            return "translate(" + dx + "," + dy + ")";
         }
         function transformLinkLabel(d) {
             dx = (d.source.x - d.target.x) * 0.5;
@@ -420,39 +452,69 @@ var ForceGraph = function(selector, data) {
             return "translate(" + (d.target.x + dx) + "," + (d.target.y + dy) + ")";
         }
 
-        // Highlight onclick functions
+        // Use elliptical arc path segments to doubly-encode directionality.
+        function ticked() {
+            path.attr("d", linkArc);
+            node.attr("transform", transformNode);
+            text.attr("transform", transformNode);
+            //source_label.attr("transform", transformLinkSourceLabel);
+            //target_label.attr("transform", transformLinkTargetLabel);
+            link_label.attr("transform", transformLinkLabel);
+        }
 
+        force
+            .nodes(_data.nodes)
+            .on("tick", ticked);
+
+        force
+            .force("link")
+            .links(_data.links);
+
+        // Highlight onclick functions
         function set_highlight(d) {
             svg.style("cursor","pointer");
             if (focus_node!==null)
                 d = focus_node;
             highlight_node = d;
+            node
+                .attr("fill", function(o) {
+                    return isConnected(d, o) ? sdncolor.NODE_COLOR_HIGHLIGHT[o.type] : sdncolor.NODE_COLOR[o.type];});
+            text.style("font-weight", function(o) {
+                return isConnected(d, o) ? "bold" : "normal";});
 
-            if (highlight_color!="white") {
-                circle.style(towhite, function(o) {
-                    return isConnected(d, o) ? highlight_color : "white";});
-                text.style("font-weight", function(o) {
-                    return isConnected(d, o) ? "bold" : "normal";});
-                path.style("stroke", function(o) {
-                    return o.source.index == d.index || o.target.index == d.index ? highlight_color : default_link_color;
-                });
-            }
+//
+//                source_label.style(towhite, function(o) {
+//                    return isConnected(d, o) ? highlight_color : "white";});
+//
+//                target_label.style(towhite, function(o) {
+//                    return isConnected(d, o) ? highlight_color : "white";});
+//
+//                link_label.style(towhite, function(o) {
+//                    return isConnected(d, o) ? highlight_color : "white";});
+
+            path.style("stroke", function(o) {
+                return o.source.index == d.index || o.target.index == d.index ? sdncolor.LINK_COLOR_HIGHLIGHT['switch'] : sdncolor.LINK_COLOR['switch'];
+            });
         }
-        function exit_highlight() {
+        function exit_highlight(d) {
             highlight_node = null;
-            if (focus_node===null) {
-                svg.style("cursor","move");
-                if (highlight_color!="white") {
-                    circle.style(towhite, "white");
-                    text.style("font-weight", "normal");
-                    path.style("stroke", function(o) {return default_link_color});
-                }
-            }
+
+            svg.style("cursor","move");
+            node
+                .attr("fill", function(o) { return o.background_color; })
+                .style("opacity", 1);
+                //.style(towhite, "white");
+            path
+                .style("opacity", 1)
+                .style("stroke", function(o) { return sdncolor.LINK_COLOR[d.type]; });
+            text
+                .style("opacity", 1)
+                .style("font-weight", "normal");;
         }
         // focus highlight (onclick)
         function set_focus(d) {
             if (highlight_trans<1) {
-                circle.style("opacity", function(o) {
+                node.style("opacity", function(o) {
                     return isConnected(d, o) ? 1 : highlight_trans;
                 });
 			    text.style("opacity", function(o) {
@@ -462,10 +524,25 @@ var ForceGraph = function(selector, data) {
                     return o.source.index == d.index || o.target.index == d.index ? 1 : highlight_trans;
                 });
 	        }
+            node
+            .attr("fill", function(o) {
+                return isConnected(d, o) ? sdncolor.NODE_COLOR_HIGHLIGHT[o.type] : sdncolor.NODE_COLOR[o.type];})
+            .style("opacity", function(o) {
+                return isConnected(d, o) ? 1 : highlight_trans;
+            });
         }
     }
 }
 
+function radius_positioning(cx, cy, x, y) {
+  delta_x = x - cx;
+  delta_y = y - cy;
+  rad = Math.atan2(delta_y, delta_x);
+  new_x = cx + Math.cos(rad) * DISTANCE['port'];
+  new_y = cy + Math.sin(rad) * DISTANCE['port'];
+
+  return [new_x, new_y];
+}
 
 var forcegraph = '';
 var sdntopology = '';
@@ -478,7 +555,24 @@ var SDNColor = function() {
     this.colors = {'1':'darkseagreen', '10':'dodgerblue', '11':'chocolate', '100':'darkorange', '101':'darkviolet', '110':'darkturquoise', '111':'black' }
     this.trace_color_on = '#1AC91A';
     this.trace_color_off = 'lightgray';
+
     this.color_default = '#8EB5EA';
+
+
+    this.NODE_COLOR = {'switch': '#8EB5EA',
+                      'port': "#0cc"};
+    this.NODE_COLOR_HIGHLIGHT = {'switch': "#4D7C9D",
+                                'port': "#007C9D"};
+
+    //var NODE_BORDER_COLOR = {'switch': 30,
+    //                         'port': 5};
+
+    this.LINK_COLOR = {'switch': "#888",
+                      'port': "#888"};
+    //var NODE_BORDER_COLOR_HIGHLIGHT = {'switch': 30,
+    //                                   'port': 5};
+    this.LINK_COLOR_HIGHLIGHT = {'switch': "#4D7C9D"};
+    this.LINK_COLOR_HIDE = {'switch': 'white'};
 
     /**
      * Get color CSS name.
@@ -535,16 +629,15 @@ var SDNTopology = function() {
                 ajax_done(json);
             })
             .fail(function() {
-                console.log( "error" );
+                console.log( "call_get_switches ajax error" );
             })
             .always(function() {
-                console.log( "complete" );
+                console.log( "call_get_switches ajax complete" );
             });
         }
     }
 
     this.get_switch_by_dpid = function(dpid) {
-
         // add to topology list to render the html
         for (var key in sdntopology.switches) {
             if (sdntopology.switches[key].id == dpid) {
@@ -557,7 +650,6 @@ var SDNTopology = function() {
     * Use this function instead of access the topology attribute.
     */
     this.add_topology = function(link) {
-
         // add to topology list to render the html
         this.topology.push(link);
     }
@@ -581,11 +673,26 @@ var SDNTopology = function() {
                     var linkObj = new Link();
                     linkObj.speed = link.speed;
 
+                    // creating switch
                     linkObj.node1 = new Switch(link.node1.dpid);
                     linkObj.node2 = new Switch(link.node2.dpid);
 
+                    // creating switch ports
+                    var node1_port = new Port(link.node1.dpid +'_'+ link.node1.port.port_no, link.node1.port.port_no, link.node1.port.name);
+                    linkObj.node1.ports = [];
+                    linkObj.node1.ports.push(node1_port);
+
+                    // creating switch ports
+                    var node2_port = new Port(link.node2.dpid +'_'+ link.node2.port.port_no, link.node2.port.port_no, link.node2.port.name);
+                    linkObj.node2.ports = [];
+                    linkObj.node2.ports.push(node2_port);
+
+
                     linkObj.label1 = link.node1.port.name;
                     linkObj.label2 = link.node2.port.name;
+
+                    linkObj.label_num1 = link.node1.port.port_no;
+                    linkObj.label_num2 = link.node2.port.port_no;
 
                     sdntopology.add_topology(linkObj);
                 });
@@ -612,10 +719,10 @@ var SDNTopology = function() {
                 ajax_done(json);
             })
             .fail(function() {
-                console.log( "error" );
+                console.log( "call_get_topology ajax error" );
             })
             .always(function() {
-                console.log( "complete" );
+                console.log( "call_get_topology ajax complete" );
             });
         }
     }
@@ -706,14 +813,13 @@ var SDNTopology = function() {
                 ajax_done(json);
             })
             .fail(function() {
-                console.log( "error" );
+                console.log( "call_get_switch_ports ajax error" );
             })
             .always(function() {
-                console.log( "complete" );
+                console.log( "call_get_switch_ports ajax complete" );
             });
         }
     }
-
 
     /**
      * Render HTML of the topology.
@@ -776,9 +882,12 @@ var Link = function() {
     this.label1 = null;
     this.label2 = null;
 
+    // String
+    this.label_num1 = null;
+    this.label_num2 = null;
+
     // number. Bits per second.
     this.speed = null;
-
 }
 
 /**
@@ -790,6 +899,8 @@ var Switch = function(switch_id) {
 
     this.n_ports;
     this.n_tables;
+
+    this.ports;
 
     /**
      * Get switch fantasy name from configuration data.
@@ -845,6 +956,16 @@ var Switch = function(switch_id) {
         }
         return this.id;
     }
+
+    this.get_d3js_data = function() {
+        node_id = this.id;
+        node_obj = {id: node_id, dpid: node_id, name: node_id, data:this, label:this.get_node_name(), physics:true, mass:2, stroke_width:1, type:"switch"};
+        // Trace coloring
+        if (typeof(node_obj.color)==='undefined') {
+            node_obj.background_color = sdncolor.NODE_COLOR[node_obj.type];
+        }
+        return node_obj;
+    }
 }
 // Return switch id if the class is used with strings
 Switch.prototype.toString = function(){ return this.id; };
@@ -853,9 +974,19 @@ Switch.prototype.toString = function(){ return this.id; };
 /**
  * Switch port representation.
  */
-var Port = function(port_id, label) {
+var Port = function(port_id, number, label) {
     this.id = port_id;
+    this.number = number;
     this.label = label;
+
+    this.get_d3js_data = function() {
+        node_id = this.id;
+        node_obj = {id: node_id, name: null, data:this, label:this.label, physics:true, from_sw:'', to_sw:'', mass:2, stroke_width:1, type:"port"};
+        node_obj.background_color = sdncolor.NODE_COLOR[node_obj.type];
+
+        return node_obj;
+    }
+
 }
 // Return switch port id if the class is used with strings
 Port.prototype.toString = function(){ return this.id; };
@@ -864,6 +995,16 @@ Port.prototype.toString = function(){ return this.id; };
 var D3JS = function() {
     this.nodes = null;
     this.edges = null;
+
+    this.findNode = function(id) {
+        for (var k in this.nodes){
+            if (this.nodes.hasOwnProperty(k) && this.nodes[k].id == id) {
+                 return this.nodes[k];
+            }
+        }
+        return null;
+    }
+
     /**
      * Render topology using topology data saved in sdntopology object.
      * It uses the vis.js graph library.
@@ -885,14 +1026,9 @@ var D3JS = function() {
         // create an array with nodes
         var nodesArray = [];
         for (x = 0; x < sdntopology.switches.length; x++) {
-            node_id = sdntopology.switches[x].id;
             // positioning in spiral mode to help the physics animation and prevent crossing lines
-            angle = 0.1 * x;
-            node_obj = {id: node_id, dpid: node_id, name: node_id, data:sdntopology.switches[x], label:sdntopology.switches[x].get_node_name(), x:(1+angle)*Math.cos(angle), y:(1+angle)*Math.sin(angle), physics:true, mass:2, borderWidth:1};
-            // Trace coloring
-            if (typeof(node_obj.color)==='undefined') {
-                node_obj.color = {'background' : sdncolor.color_default};
-            }
+            node_obj = sdntopology.switches[x].get_d3js_data()
+
             nodesArray.push(node_obj);
         }
         this.nodes = nodesArray;
@@ -930,28 +1066,58 @@ var D3JS = function() {
             label_from = sdntopology.topology[x].label1;
             label_to = sdntopology.topology[x].label2;
 
+            label_num_from = sdntopology.topology[x].label_num1;
+            label_num_to = sdntopology.topology[x].label_num2;
+
             speed = sdntopology.topology[x].speed;
 
+            source = this.findNode(node_from_id) || this.nodes.push({name: node_from_id});
+            target = this.findNode(node_to_id) || this.nodes.push({name: node_to_id});
 
-            edgeObj = {id:x, name:x, source: node_from_id, target: node_to_id, source_label:label_from, target_label:label_to, speed:speed, arrows:'to', type: "suit"};
+            source_label = {name: label_from, num: label_num_from};
+            target_label = {name: label_to, num: label_num_to};
+
+            edgeObj = {id:x, name:x, source: source, target: target, source_label:source_label, target_label:target_label, speed:speed, arrows:'to', type: "suit"};
+            edgeObj.color = sdncolor.LINK_COLOR['switch'];
+
             // Verify trace to change edge colors and labels.
             has_edge_path_obj = this._has_edge_path(edgesArray, edgeObj);
             edgesArray.push(edgeObj);
+
+            // adding port as a node
+            var node_port_obj_from;
+            var node_port_obj_to;
+            if (node_from_id.ports && node_from_id.ports.length > 0) {
+                node_port_obj_from = node_from_id.ports[0].get_d3js_data()
+                node_port_obj_from.from_sw = source;
+                node_port_obj_from.to_sw = target;
+                this.nodes.push(node_port_obj_from);
+
+                //edgePortObj = {id:x+"_1", edgetype:"s_p", name:label_num_from, source: node_from_id, target: node_from_id.ports[0], arrows:'to'};
+                //edgesArray.push(edgePortObj);
+            }
+
+            if (node_to_id.ports && node_to_id.ports.length > 0) {
+                node_port_obj_to = node_to_id.ports[0].get_d3js_data()
+                node_port_obj_to.from_sw = target;
+                node_port_obj_to.to_sw = source;
+
+                this.nodes.push(node_port_obj_to);
+
+                //this.nodes.push(node_port_obj_to);
+                //edgePortObj = {id:x+"_2", edgetype:"s_p", name:label_num_from, source: node_to_id.ports[0], target: node_to_id, arrows:'to'};
+                //edgesArray.push(edgePortObj);
+            }
+            //edgePortObj = {id:x+"_3", edgetype:"p_p", name:label_num_from, source: node_from_id.ports[0], target: node_to_id.ports[0], arrows:'to'};
+            //edgesArray.push(edgePortObj);
         }
+
         this.edges = edgesArray;
     }
 
     this._render_network = function(with_colors, with_trace) {
         with_colors = typeof with_colors !== 'undefined' ? with_colors : true;
         with_trace = typeof with_trace !== 'undefined' ? with_trace : true;
-
-        this.resetAllNodes();
-
-        // create an array with nodes
-        this._create_network_nodes(with_colors, with_trace);
-
-        // create an array with edges
-        this._create_network_edges(with_colors, with_trace);
 
         // create a network
         var selector = "#topology__canvas";
@@ -960,28 +1126,23 @@ var D3JS = function() {
             links: []
         };
 
+
+        this.resetAllNodes();
+
+        // create an array with nodes
+        this._create_network_nodes(with_colors, with_trace);
+        data.nodes = this.nodes;
         // Node attribute to store json data
         data.nodes_data = this.nodes;
 
-        // creating Force Graph paths
-        for (var key in this.nodes) {
-            data.nodes[this.nodes[key].dpid] = this.nodes[key];
-        }
+        // create an array with edges
+        this._create_network_edges(with_colors, with_trace);
+
 
         // creating Force Graph paths
         for (var key in this.edges) {
             data.links.push(this.edges[key]);
         }
-
-        // Compute the distinct nodes from the links.
-        data.links.forEach(function(link) {
-          link.source = data.nodes[link.source] || (data.nodes[link.source] = {name: link.source});
-          link.target = data.nodes[link.target] || (data.nodes[link.target] = {name: link.target});
-
-          link.source_label = {name: link.source_label};
-          link.target_label = {name: link.target_label};
-          //link.speed = link.speed;
-        });
 
         // Link attribute to store json data
         data.edges_data = this.edges;
@@ -1033,9 +1194,16 @@ $(function() {
         if ($(this).hasClass("active")) {
             $('.target-label').hide();
             $('.source-label').hide();
+            d3.selectAll(".node_port").style("visibility", "hidden");
+            d3.selectAll(".text_port").style("visibility", "hidden");
+
+
         } else {
             $('.target-label').show();
             $('.source-label').show();
+            d3.selectAll(".node_port").style("visibility", "visible");
+            d3.selectAll(".text_port").style("visibility", "visible");
+
         }
     });
     // Topology speed link labels handler
