@@ -23,6 +23,7 @@ class DataSwitchConfig:
         self._n_tbls = None
         self._caps = None
         self._proto = None
+        self._reason = None
         self._ports = None
 
         self._instantiate_vars(data)
@@ -31,6 +32,7 @@ class DataSwitchConfig:
         self.n_tbls = data['n_tbls']
         self.caps = data['caps']
         self.proto = data['proto']
+        self.reason = data['reason']
         self.ports = DataPorts(data['ports'])
 
     @property
@@ -74,6 +76,22 @@ class DataSwitchConfig:
                 raise ValueError
         except ValueError:
             raise ValueError("Invalid proto: must be OpenFlow1.0 or OpenFlow1.3")
+
+
+    @property
+    def reason(self):
+        return self._reason
+
+
+    @reason.setter
+    def reason(self, reason):
+        try:
+            if reason in ['added', 'modified', 'deleted']:
+                self._reason = reason
+            else:
+                raise ValueError
+        except ValueError:
+            raise ValueError("Invalid reason: must be added, modified or deleted")
 
 
 class DataMsgReceived:

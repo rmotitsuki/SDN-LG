@@ -14,10 +14,10 @@ from shared.messagebroker import MessageBroker
 class MyBroker(object):
 
     def __init__(self):
-        def listener_core(msg):
+        def listener_controller(msg):
             print(msg)
 
-        self.mb = MessageBroker(listener_core, controller=False)
+        self.mb = MessageBroker(listener_controller)
         self.message = dict()
         self.header = {"version": 1, "id": 1, "payload": 3,
                        "timing": 1, "ipp": "192.168.56.1:6633"}

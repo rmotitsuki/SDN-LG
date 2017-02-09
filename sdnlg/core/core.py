@@ -7,7 +7,7 @@ from sdnlg.libs.utils.singleton import Singleton
 
 from sdnlg.libs.core.configs import read_openflow_configs
 from shared.cal.cal import CoreCal
-from shared.cal.cal import Message
+#from shared.cal.cal import Message
 from shared.messagebroker import MessageBroker
 
 confs = read_openflow_configs()
@@ -33,6 +33,13 @@ class Core(object, metaclass=Singleton):
         self._links = list()
         self._dispatcher = None
         self._cal = CoreCal()
+
+        def listener_core(msg):
+            if msg.header.payload == 3:
+                if msg.body.action == 'switch_config':
+                    self.process_switch_config(msg.body)
+
+        self._mb = MessageBroker(listener_core, False)
 
     @property
     def switches(self):
@@ -87,9 +94,17 @@ class Core(object, metaclass=Singleton):
         if not self.has_link(port2, port2):
             self.links.append((port1, port2))
 
-    def send_packet(self, node, port, data):
-        msg = Message()
-        msg.header.id = 255
+    # def send_packet(self, node, port, data):
+    #     msg = Message()
+    #     msg.header.id = 255
+
+    def prepare_ports(self, list_ports):
+        ports = list()
+        for p in list_ports:
+            port = Port({'port_no': p.port_no, 'name': p.name, 'speed': p.speed, 'state':p.state})
+            ports.append(port)
+
+        return ports
 
     def switch_exists(self, dpid):
         for s in self.switches:
@@ -99,11 +114,9 @@ class Core(object, metaclass=Singleton):
 
     def add_switch(self, dpid, controller_id, data):
         # add a switch to the list
-        node = Node({'dpid': dpid, 'controller_id': controller_id, 'n_tables': data['n_tables'],
-                     'capabilities': data['capabilities']})
-        for p in data['ports']:
-            port = Port({'port_no': p['id'], 'name': p['name'], 'speed': p['speed']})
-            node.ports.append(port)
+        node = Node({'dpid': dpid, 'controller_id': controller_id, 'n_tables': data.n_tbls,
+                     'capabilities': data.caps})
+        node.ports = self.prepare_ports(data.ports.dports.values())
         self.switches.append(node)
 
     def remove_switch(self, dpid):
@@ -115,8 +128,9 @@ class Core(object, metaclass=Singleton):
     def update_switch(self, s, dpid, controller_id, data):
         s.dpid = dpid
         s.controller_id = controller_id
-        s.n_tables = data['n_tables']
-        s.capabilities = data['capabilities']
+        s.n_tables = data.n_tbls
+        s.capabilities = data.caps
+        s.ports = self.prepare_ports(data.ports.dports.values())
 
     def add_port(self, dpid, port):
         # add a port to a existing switch
@@ -200,6 +214,17 @@ class Core(object, metaclass=Singleton):
     def color_node(self, node, color):
         node.old_color = node.color
         node.color = color
+
+    def process_switch_config(self, msg):
+        if msg.data.reason == 'added':
+            self.add_switch(msg.dpid, 1, msg.data)
+        elif msg.data.reason == 'modified':
+            s = self.switch_exists(msg.dpid)
+            if s:
+                self.update_switch(s, msg.dpid, 1, msg.data)
+        elif msg.data.reason == 'deleted':
+            self.remove_switch(msg.dpid)
+        print(self.switches)
 
 
 def cube():

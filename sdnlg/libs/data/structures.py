@@ -151,6 +151,7 @@ class Port(object):
         self._neighbors = list()
         self._uptime = None
         self._node = None
+        self._state = None
 
         self._instantiate_port(port)
 
@@ -160,6 +161,7 @@ class Port(object):
         self.speed = port.get('speed')
         self.neighbors = port.get('neighbors')
         self.uptime = port.get('uptime')
+        self.state = port.get('state')
 
     def __eq__(self, other):
         return self.port_no == other.port_no and self.name == other.name and self.speed == other.speed
@@ -186,7 +188,7 @@ class Port(object):
 
     @speed.setter
     def speed(self, my_speed):
-        self._speed = int(my_speed)
+        self._speed = my_speed
 
     @property
     def neighbors(self):
@@ -216,3 +218,11 @@ class Port(object):
     @node.setter
     def node(self, my_node):
         self._node = my_node
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, my_state):
+        self._state = my_state
