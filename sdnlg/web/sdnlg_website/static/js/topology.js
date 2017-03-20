@@ -1,4 +1,4 @@
-var DEBUG = false;
+var DEBUG = true;
 // Mock json switch list structures. Used for testing purposes.
 var MOCK_JSON_SWITCHES = '[' +
     '{"capabilities": "", "dpid": "0000000000000001", "n_ports": 8, "n_tables": 5},' +
@@ -51,6 +51,9 @@ var MOCK_JSON_SWITCH_PORTS = '[' +
     '{ "name": "10Gigabit7", "port_no": 7, "speed": 10000000000, "uptime": 1007698},' +
     '{ "name": "10Gigabit8", "port_no": 8, "speed": 10000000000, "uptime": 418707 }' +
     ']';
+// Mock json trace
+var MOCK_JSON_TRACE = '["0000000000000001", "0000000000000002", "0000000000000003"]';
+var MOCK_JSON_TRACE = '["0000000000000001", "0000000000000002", "0000000000000003"]';
 
 
 var SPEED_100GB = 100000000000;
@@ -66,9 +69,6 @@ var SIZE = {'switch': 16,
 var DISTANCE = {'switch': 15 * SIZE['switch'],
                 'port': SIZE['switch'] + 16,
                 'host': 1 * SIZE['port']};
-
-
-
 
 /**
 This is the class that will create a graph.
@@ -103,12 +103,18 @@ var ForceGraph = function(p_selector, p_data) {
             {
                 title: 'Interfaces (' + data.data.n_ports + ')',
                 action: function(elm, d, i) {
-                    sdntopology.call_get_switch_ports(d.dpid);
+                    sdntopology.call_get_switch_ports(d.dpid, sdntopology._render_html_popup_ports);
                 }
             },
             {
                 title: 'Total traffic: 000',
                 action: function() {}
+            },
+            {
+                title: 'Trace',
+                action: function(elm, d, i) {
+                    sdntopology.show_trace_form(d);
+                }
             }
         ];
     };
@@ -116,10 +122,10 @@ var ForceGraph = function(p_selector, p_data) {
     var width = 960,
         height = 600;
 
-    var highlight_trans = 0.1;
+    var highlight_transparency = 0.1;
     // highlight var helpers
     // highlight var helpers
-    var focus_node = null, highlight_node = null;
+    var focus_node = null;
 
     var min_zoom = 0.1;
     var max_zoom = 7;
@@ -134,24 +140,19 @@ var ForceGraph = function(p_selector, p_data) {
     var nominal_base_node_size = 8;
     var nominal_stroke = 1.5;
 
-    var _linkedByIndex = {};
+    var _linkedByIndex = new Map();
 
     function addConnection(a, b) {
-        _linkedByIndex[a + "," + b] = true;
+        /**
+         a: source switch dpid
+         b: target switch dpid
+        */
+        _linkedByIndex.set(a + "," + b, true);
     }
 
 	function isConnected(a, b) {
-        return _linkedByIndex[a.dpid + "," + b.dpid] || _linkedByIndex[b.dpid + "," + a.dpid] || a.dpid == b.dpid;
+        return _linkedByIndex.has(a.dpid + "," + b.dpid) || _linkedByIndex.has(b.dpid + "," + a.dpid) || a.dpid == b.dpid;
     }
-
-	function hasConnections(a) {
-		for (var property in _linkedByIndex) {
-            s = property.split(",");
-            if ((s[0] == a.index || s[1] == a.index) && _linkedByIndex[property])
-                return true;
-		}
-	    return false;
-	}
 
     // zoom behavior
     var zoomed = function(d) {
@@ -176,10 +177,11 @@ var ForceGraph = function(p_selector, p_data) {
         .call(zoom);
         ;
     */
-    var svg = d3.select(p_selector).append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .call(zoom);
+    var svg = d3.select(p_selector)
+        .append("svg")
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .call(zoom);
 
     var container = svg.append("g");
 
@@ -190,298 +192,74 @@ var ForceGraph = function(p_selector, p_data) {
             return _data;
         }
         _data = value;
+        console.log(value);
+
         return this;
-        // setter, returns the forceGraph object
     }
 
-    this.draw = function() {
-        // draw the force graph using data
-        var force_nodes = d3.values(_data.nodes);
-
-        // setting node color labels and color
-        var temp_nodes = [];
-
-
-        // setting edge color
-        for (var x in _data.links) {
-            for (var y in _data.edges_data) {
-                if ((_data.links[x].source.name == _data.edges_data[y].from && _data.links[x].target.name == _data.edges_data[y].to) ||
-                     (_data.links[x].target.name == _data.edges_data[y].from && _data.links[x].source.name == _data.edges_data[y].to)) {
-                    // setting edge color
-                    if (_data.edges_data[y].color) {
-                        if (typeof _data.links[x].color == 'undefined') {
-                            _data.links[x].color = _data.edges_data[y].color;
-                        }
-                    } else {
-                        _data.links[x].color = sdncolor.color_default;
+    var force = d3.forceSimulation()
+        .force("link",
+            d3.forceLink()
+                .id(function(d) { return d.id })
+                .distance(function(d) {
+                    if (d.edgetype == 's_p') {
+                        return 0;
                     }
-                }
-            }
-        }
-
-        for (var x in _data.links) {
-            // setting highlight helper
-            addConnection(_data.links[x].source.id, _data.links[x].target.id);
-        }
-
-        var force = d3.forceSimulation(_data.nodes)
-            .force("link",
-                d3.forceLink()
-                    .id(function(d) { return d.id })
-                    .distance(function(d) {
-                        if (d.edgetype == 's_p') {
-                            return 0;
-                        }
-                        return DISTANCE['switch'];
-                    })
-                    .strength(0.5)
-            )
-            .force("charge", d3.forceManyBody().strength(-40))
-            .force("center", d3.forceCenter(width / 2, height / 2));
-        // reconfigure drag, so switch drag take precedence over panning
-        // Per-type markers, as they don't inherit styles.
-
-        // draw link paths
-        var path = container.append("g")
-            .attr("class", "paths")
-            .selectAll("path")
-            .data(_data.links)
-            .enter().append("line")
-            .attr("class", function(d) {
-                var return_var = "";
-                if (d.speed >= SPEED_100GB) {
-                    return_var = return_var + " link-large";
-                } else if (d.speed >= SPEED_10GB) {
-                    return_var = return_var + " link-medium";
-                } else if (d.speed >= SPEED_1GB) {
-                    return_var = return_var + " link-thin";
-                }
-                return_var = return_var + " link " + d.type;
-                return return_var;
-            })
-            .style("stroke", function(d) {
-                if (d.edgetype == 's_p') {
-                    return '#fff';
-                }
-                return d.color;
-            })
-            .attr("marker-end", function(d) { return "url(#" + d.type + ")"; });
-
-
-        var nodeDragstarted = function (d) {
-            if (d.type == 'port') { return " node_port"; }
-            if (!d3.event.active) force.alphaTarget(0.3).restart()
-            d.fx = d.x;
-            d.fy = d.y;
-        }
-
-        var nodeDragged = function (d) {
-            if (d.type == 'port') { return " node_port"; }
-            d.fx = d3.event.x;
-            d.fy = d3.event.y;
-        }
-
-        var nodeDragended = function (d) {
-            if (d.type == 'port') { return " node_port"; }
-            if (!d3.event.active) force.alphaTarget(0);
-            focus_node = null;
-            exit_highlight(d);
-            // reset fixed coordinates to dynamic
-            // d.fx = null;
-            // d.fy = null;
-        }
-
-        var is_mousedown = false;
-        // switch draw
-        var node = container
-            .append("g")
-            .attr("class", "nodes")
-            .selectAll("circle")
-            .data(_data.nodes)
-            .enter().append("circle")
-                //teste
-                .attr("r", function(d) { return SIZE[d.type]||nominal_base_node_size; })
-                .attr("fill", function(d) {
-                    return d.background_color; })
-                .style(tocolor, function(d) {
-                    return d.background_color; })
-                .attr("class", function(d) {
-                    if (d.type == 'port') {
-                        return " node_port";
-                    }
-                    return "";
+                    return DISTANCE['switch'];
                 })
-                .style("visibility", function(d) {
-                    if (d.type == 'port') {
-                        return "hidden";
-                    }
-                    return "visible";
-                })
-                .on('contextmenu', d3.contextMenu(menu)) // attach menu to element
+                .strength(0.5)
+        )
+        .force("charge", d3.forceManyBody().strength(-40))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+    .alphaTarget(0.05)
+    .on("tick", ticked);
 
-                .on("mouseover", function(d) {
-                    if (d.type == 'port') {
-                        return;
-                    }
-                    if (d.type == 'switch') {
-                        set_highlight(d);
-                    }
-                })
-                .on("mousedown", function(d) {
-                    d3.event.stopPropagation();
-                    if (d.type == 'port') {
-                        return;
-                    }
-                    // focus_node to control highlight events
-                    focus_node = d;
-                    set_focus(d)
-                    //if (highlight_node === null) set_highlight(d)
-                })
-                .on("mouseout", function(d) {
-                    if (d.type == 'port') {
-                        return;
-                    }
-                    if (focus_node === null) {
-                        exit_highlight(d);
-                    }
-                })
-                .on("click", function(d) {
-                    if (d.type == 'port') {
-                        return;
-                    }
-                    focus_node = null;
-                    exit_highlight(d);
-                })
-                .on("dblclick.zoom", function(d) {
-                    d3.event.stopPropagation();
-                })
-                .call(d3.drag()
-                    .on("start", nodeDragstarted)
-                    .on("drag", nodeDragged)
-                    .on("end", nodeDragended));
+    // switch node
+    var node = container
+        .append("g")
+        .attr("class", "nodes")
+        .selectAll("circle")
+    // draw link paths
+    var path = container.append("g")
+        .attr("class", "paths")
+        .selectAll("path");
+    // draw switch label
+    var text = container.append("g").selectAll("text");
+    // draw link label
+    var link_label = container.append("g").selectAll("text");
 
-    	var tocolor = "fill";
-        var towhite = "stroke";
-        if (outline) {
-            tocolor = "stroke"
-            towhite = "fill"
-        }
-        // draw switch label
-        var text = container.append("g").selectAll("text")
-            .data(_data.nodes)
-            .enter().append("text")
-            .attr("class", function(d) {
-                if (d.type == 'port') {
-                    return "node_text text_port";
-                }
-                return "node_text";
-            })
-            .style("visibility", function(d) {
-                if (d.type == 'port') {
-                    return "hidden";
-                }
-                return "visible";
-            })
-            .attr("x", 0)
-            .attr("y", ".1em")
-            .text(function(d) { if(d.label) return d.label; return d.name; });
 
-        // draw link source label
-//        var source_label = container.append("g")
-//            .selectAll("text")
-//            .data(force.links())
-//            .enter().append("text")
-//            .attr("class", "source-label")
-//            .text(function(d) { return d.source_label.num; });
-//
-//        // draw link target label
-//        var target_label = container.append("g").selectAll("text")
-//           .data(force.links())
-//           .enter().append("text")
-//           .attr("class", "target-label")
-//           .text(function(d) { return d.target_label.num; });
+    var _nodeDragstarted = function (d) {
+        if (d.type == 'port') { return " node_port"; }
+        if (!d3.event.active) force.alphaTarget(0.3).restart()
+        d.fx = d.x;
+        d.fy = d.y;
+    }
 
-        // draw link label
-        var link_label = container.append("g").selectAll("text")
-            .data(_data.links)
-            .enter().append("text")
-            .attr("class", "speed-label")
-            .text(function(d) {
-                return format_speed(d.speed);
-            });
+    var _nodeDragged = function (d) {
+        if (d.type == 'port') { return " node_port"; }
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
 
-        function linkArc(d) {
-            path
-                .attr("x1", function(d) { return d.source.x; })
-                .attr("y1", function(d) { return d.source.y; })
-                .attr("x2", function(d) { return d.target.x; })
-                .attr("y2", function(d) { return d.target.y; });
-        }
+    var _nodeDragended = function (d) {
+        if (d.type == 'port') { return " node_port"; }
+        if (!d3.event.active) force.alphaTarget(0);
+        focus_node = null;
+        exit_highlight(d);
+    }
 
-        function transform(d) {
-            return "translate(" + d.x + "," + d.y + ")";
-        }
 
-        function transformNode(d) {
-            return_val = '';
-            if (d.type == "port") {
-                new_positions = radius_positioning(d.from_sw.x, d.from_sw.y, d.to_sw.x, d.to_sw.y);
-                dx = new_positions[0];
-                dy = new_positions[1];
-                return_val = "translate(" + dx + "," + dy + ")";
-            } else {
-                return_val = "translate(" + d.x + "," + d.y + ")";
-            }
-            return return_val;
-        }
-        function transformLinkSourceLabel(d) {
-            new_positions = radius_positioning(d.source.x, d.source.y, d.target.x, d.target.y);
-            dx = new_positions[0] - SIZE['port'];
-            dy = new_positions[1] + SIZE['port']/2.0;
-            return "translate(" + dx + "," + dy + ")";
-        }
-        function transformLinkTargetLabel(d) {
-            new_positions = radius_positioning(d.target.x, d.target.y, d.source.x, d.source.y);
-            dx = new_positions[0]
-            dy = new_positions[1]
-            return "translate(" + dx + "," + dy + ")";
-        }
-        function transformLinkLabel(d) {
-            dx = (d.source.x - d.target.x) * 0.5;
-            dy = (d.source.y - d.target.y) * 0.5;
-            return "translate(" + (d.target.x + dx) + "," + (d.target.y + dy) + ")";
-        }
 
-        // Use elliptical arc path segments to doubly-encode directionality.
-        function ticked() {
-            path.attr("d", linkArc);
-            node.attr("transform", transformNode);
-            text.attr("transform", transformNode);
-            //source_label.attr("transform", transformLinkSourceLabel);
-            //target_label.attr("transform", transformLinkTargetLabel);
-            link_label.attr("transform", transformLinkLabel);
-        }
-
-        force
-            .nodes(_data.nodes)
-            .on("tick", ticked);
-
-        force
-            .force("link")
-            .links(_data.links);
-
-        // Highlight onclick functions
-        function set_highlight(d) {
-            svg.style("cursor","pointer");
-            if (focus_node!==null)
-                d = focus_node;
-            highlight_node = d;
-            node
-                .attr("fill", function(o) {
-                    return isConnected(d, o) ? sdncolor.NODE_COLOR_HIGHLIGHT[o.type] : sdncolor.NODE_COLOR[o.type];});
-            text.style("font-weight", function(o) {
-                return isConnected(d, o) ? "bold" : "normal";});
-
+    // Highlight onclick functions
+    function set_highlight(d) {
+        svg.style("cursor","pointer");
+        if (focus_node!==null)
+            d = focus_node;
+        node.attr("fill", function(o) {
+                return isConnected(d, o) ? sdncolor.NODE_COLOR_HIGHLIGHT[o.type] : sdncolor.NODE_COLOR[o.type];});
+        text.style("font-weight", function(o) {
+            return isConnected(d, o) ? "bold" : "normal";});
 //
 //                source_label.style(towhite, function(o) {
 //                    return isConnected(d, o) ? highlight_color : "white";});
@@ -492,45 +270,291 @@ var ForceGraph = function(p_selector, p_data) {
 //                link_label.style(towhite, function(o) {
 //                    return isConnected(d, o) ? highlight_color : "white";});
 
-            path.style("stroke", function(o) {
-                return o.source.index == d.index || o.target.index == d.index ? sdncolor.LINK_COLOR_HIGHLIGHT['switch'] : sdncolor.LINK_COLOR['switch'];
+        path.style("stroke", function(o) {
+            return o.source.index == d.index || o.target.index == d.index ? sdncolor.LINK_COLOR_HIGHLIGHT['switch'] : sdncolor.LINK_COLOR['switch'];
+        });
+    }
+    function exit_highlight(d) {
+        svg.style("cursor","move");
+        node.attr("fill", function(o) { return o.background_color; })
+            .style("opacity", 1);
+            //.style(towhite, "white");
+        path.style("opacity", 1)
+            .style("stroke", function(o) { return sdncolor.LINK_COLOR[d.type]; });
+        text.style("opacity", 1)
+            .style("font-weight", "normal");;
+    }
+
+
+    // focus highlight (on node mousedown)
+    function set_switch_focus(d) {
+        // Set data info panel
+        if(d && d.data) {
+            $('#port_panel_info').hide();
+            $('#switch_to_panel_info').hide();
+            _set_switch_focus_panel_data(d);
+        }
+
+        // Set nodes and links opacity to all of them that are not connected to the clicked node
+        if (highlight_transparency < 1) {
+            node.style("opacity", function(o) {
+                return isConnected(d, o) ? 1 : highlight_transparency;
+            });
+            text.style("opacity", function(o) {
+                return isConnected(d, o) ? 1 : highlight_transparency;
+            });
+            path.style("opacity", function(o) {
+                return o.source.index == d.index || o.target.index == d.index ? 1 : highlight_transparency;
             });
         }
-        function exit_highlight(d) {
-            highlight_node = null;
-
-            svg.style("cursor","move");
-            node
-                .attr("fill", function(o) { return o.background_color; })
-                .style("opacity", 1);
-                //.style(towhite, "white");
-            path
-                .style("opacity", 1)
-                .style("stroke", function(o) { return sdncolor.LINK_COLOR[d.type]; });
-            text
-                .style("opacity", 1)
-                .style("font-weight", "normal");;
-        }
-        // focus highlight (onclick)
-        function set_focus(d) {
-            if (highlight_trans<1) {
-                node.style("opacity", function(o) {
-                    return isConnected(d, o) ? 1 : highlight_trans;
-                });
-			    text.style("opacity", function(o) {
-                    return isConnected(d, o) ? 1 : highlight_trans;
-                });
-                path.style("opacity", function(o) {
-                    return o.source.index == d.index || o.target.index == d.index ? 1 : highlight_trans;
-                });
-	        }
-            node
-            .attr("fill", function(o) {
+        // Set the focused node to the highlight color
+        node.attr("fill", function(o) {
                 return isConnected(d, o) ? sdncolor.NODE_COLOR_HIGHLIGHT[o.type] : sdncolor.NODE_COLOR[o.type];})
             .style("opacity", function(o) {
-                return isConnected(d, o) ? 1 : highlight_trans;
+                return isConnected(d, o) ? 1 : highlight_transparency;
             });
+    }
+
+
+    /** use with set_switch_focus to set the lateral panel data  */
+    function _set_switch_focus_panel_data(d) {
+        $('#switch_panel_info').show();
+        $('#switch_panel_info_dpid_value').html(d.data.dpid);
+        var name = d.data.get_name();
+        if (name && name.length > 0) {
+            $('#switch_panel_info_name').show();
+            $('#switch_panel_info_name_value').html(name);
+        } else {
+            $('#switch_panel_info_name').hide();
         }
+        $('#switch_panel_info_flows_value').html(d.data.n_ports);
+    }
+
+    function set_port_focus(d) {
+        // Set data info panel
+        if(d && d.data) {
+            $('#port_panel_info').show();
+            var name = d.data.label;
+            console.log(name);
+            if (name && name.length > 0) {
+                $('#port_panel_info_name').show();
+                $('#port_panel_info_name_value').html(name);
+            } else {
+                $('#port_panel_info_name').hide();
+            }
+            _set_switch_focus_panel_data(d.from_sw);
+        }
+    }
+
+
+    function linkArc(d) {
+        d3.selectAll("line")
+            .attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
+    }
+
+    function transform(d) {
+        return "translate(" + d.x + "," + d.y + ")";
+    }
+
+    function transformNode(d) {
+        return_val = '';
+        if (d.type == "port") {
+            var new_positions = radius_positioning(d.from_sw.x, d.from_sw.y, d.to_sw.x, d.to_sw.y);
+            var dx = new_positions[0];
+            var dy = new_positions[1];
+            return_val = "translate(" + dx + "," + dy + ")";
+        } else {
+            return_val = "translate(" + d.x + "," + d.y + ")";
+        }
+        return return_val;
+    }
+    function transformLabel(d) {
+        var dx = d.x;
+        var dy = d.y;
+        if (d.type == "port") {
+            var new_positions = radius_positioning(d.from_sw.x, d.from_sw.y, d.to_sw.x, d.to_sw.y);
+            dx = new_positions[0];
+            dy = new_positions[1];
+            return_val = "translate(" + dx + "," + dy + ")";
+        } else {
+            dx = dx - SIZE[d.type] / 2.0;
+            return_val = "translate(" + dx + "," + dy + ")";
+        }
+        return return_val;
+    }
+    function transformLinkSourceLabel(d) {
+        var new_positions = radius_positioning(d.source.x, d.source.y, d.target.x, d.target.y);
+        var dx = new_positions[0] - SIZE['port'];
+        var dy = new_positions[1] + SIZE['port']/2.0;
+        return "translate(" + dx + "," + dy + ")";
+    }
+    function transformLinkTargetLabel(d) {
+        var new_positions = radius_positioning(d.target.x, d.target.y, d.source.x, d.source.y);
+        var dx = new_positions[0]
+        var dy = new_positions[1]
+        return "translate(" + dx + "," + dy + ")";
+    }
+    function transformLinkLabel(d) {
+        dx = (d.source.x - d.target.x) * 0.5;
+        dy = (d.source.y - d.target.y) * 0.5;
+        return "translate(" + (d.target.x + dx) + "," + (d.target.y + dy) + ")";
+    }
+
+    // Use elliptical arc path segments to doubly-encode directionality.
+    function ticked(d) {
+
+        d3.selectAll("line").attr("d", linkArc);
+        d3.selectAll("circle").attr("transform", transformNode);
+        d3.selectAll(".node_text").attr("transform", transformLabel);
+        d3.selectAll(".speed-label").attr("transform", transformLinkLabel);
+    }
+
+    this.draw = function() {
+        force.stop();
+
+
+        // setting edge color
+//        for (var x in _data.links) {
+//            for (var y in _data.edges_data) {
+//                if ((_data.links[x].source.name == _data.edges_data[y].from && _data.links[x].target.name == _data.edges_data[y].to) ||
+//                     (_data.links[x].target.name == _data.edges_data[y].from && _data.links[x].source.name == _data.edges_data[y].to)) {
+//                    // setting edge color
+//                    if (_data.edges_data[y].color) {
+//                        if (typeof _data.links[x].color == 'undefined') {
+//                            _data.links[x].color = _data.edges_data[y].color;
+//                        }
+//                    } else {
+//                        _data.links[x].color = sdncolor.color_default;
+//                    }
+//                }
+//            }
+//        }
+//
+//        for (var x in _data.links) {
+//            // setting highlight helper
+//            addConnection(_data.links[x].source.id, _data.links[x].target.id);
+//        }
+
+
+        // reconfigure drag, so switch drag take precedence over panning
+        // Per-type markers, as they don't inherit styles.
+
+        // draw link paths
+        path = path.data(_data.links, function(d) { return d.id; });
+
+        path = path
+            .enter()
+                .append("line")
+                    .attr("class", function(d) {
+                        var return_var = "";
+                        if (d.speed >= SPEED_100GB) {
+                            return_var = return_var + "link-path link-large";
+                        } else if (d.speed >= SPEED_10GB) {
+                            return_var = return_var + "link-path link-medium";
+                        } else if (d.speed >= SPEED_1GB) {
+                            return_var = return_var + "link-path link-thin";
+                        }
+                        return_var = return_var + "link-path link " + d.type;
+                        return return_var;
+                    })
+                    .attr("marker-end", function(d) { return "url(#" + d.type + ")"; })
+                    .style("stroke", function(d) {
+                        if (d.edgetype == 's_p') {
+                            return '#fff';
+                        }
+                        return d.color;
+                    });
+
+        // switch draw
+        node = node.data(_data.nodes, function(d) { return d.id;});
+
+        node = node
+            .enter()
+                .append("circle")
+                //teste
+                .attr("r", function(d) { return SIZE[d.type]||nominal_base_node_size; })
+                .attr("fill", function(d) { return d.background_color; })
+                .style(tocolor, function(d) { return d.background_color; })
+                .attr("class", function(d) {
+                    if (d.type == 'port') { return " node_port"; }
+                    return "";
+                })
+                .style("visibility", function(d) {
+                    if (d.type == 'port') { return "hidden"; }
+                    return "visible";
+                })
+                .on('contextmenu', d3.contextMenu(menu)) // attach menu to element
+                .on("mouseover", function(d) {
+                    if (d.type == 'port') { return; }
+                    if (d.type == 'switch') { set_highlight(d); }
+                })
+                .on("mousedown", function(d) {
+                    d3.event.stopPropagation();
+                    if (d.type == 'port') {
+                        set_port_focus(d);
+                    } else {
+                        // focus_node to control highlight events
+                        focus_node = d;
+                        set_switch_focus(d)
+                    }
+                })
+                .on("mouseout", function(d) {
+                    if (d.type == 'port') { return; }
+                    if (focus_node === null) { exit_highlight(d); }
+                })
+                .on("click", function(d) {
+                    if (d.type == 'port') { return; }
+                    focus_node = null;
+                    exit_highlight(d);
+                })
+                .on("dblclick.zoom", function(d) {
+                    d3.event.stopPropagation();
+                })
+                .call(d3.drag()
+                    .on("start", _nodeDragstarted)
+                    .on("drag", _nodeDragged)
+                    .on("end", _nodeDragended));
+
+    	var tocolor = "fill";
+        var towhite = "stroke";
+        if (outline) {
+            tocolor = "stroke"
+            towhite = "fill"
+        }
+        // draw switch label
+        text = text
+            .data(_data.nodes, function(d) { return d.id;})
+            .enter()
+                .append("text")
+                    .attr("class", function(d) {
+                        if (d.type == 'port') { return "node_text text_port"; }
+                        return "node_text";
+                    })
+                    .attr("x", 0)
+                    .attr("y", ".1em")
+                    .style("visibility", function(d) {
+                        if (d.type == 'port') { return "hidden"; }
+                        return "visible";
+                    })
+                    .text(function(d) { if(d.label) return d.label; return d.name; });
+
+        // draw link label
+        link_label = link_label
+            .data(_data.links)
+            .enter()
+                .append("text")
+                    .attr("class", "speed-label")
+                    .text(function(d) { return format_speed(d.speed); });
+
+        // setting data
+        force.nodes(_data.nodes, function(d) { return d.id;});
+        force.force("link").links(_data.links, function(d) { return d.source.id + "-" + d.target.id; });
+
+        // restart force animation
+        force.restart();
     }
 }
 
@@ -730,74 +754,23 @@ var SDNTopology = function() {
     /**
      * Call ajax to load the switch ports data.
      */
-    this.call_get_switch_ports = function(dpid) {
+    this.call_get_switch_ports = function(dpid, callback=null) {
         var ajax_done = function(json) {
             var jsonObj;
             jsonObj= json;
 
             // verify if the json is not a '{}' response
-            if (!jQuery.isEmptyObject(jsonObj)) {
+            if (callback != null && !jQuery.isEmptyObject(jsonObj)) {
                 // render D3 popup
-                popup_switch(dpid, jsonObj);
+                try {
+                    callback(dpid, jsonObj);
+                }
+                catch(err) {
+                    console.log("Error callback function: " + callback);
+                    throw err;
+                }
+
             }
-        }
-
-        var popup_switch = function(dpid, data) {
-            // remove possible popups
-            d3.select(".canvas")
-                .selectAll(".popup")
-                .remove();
-
-             // Build the popup
-            popup = d3.select(".canvas")
-                .append("div")
-                .attr("class", "popup")
-                .attr("id", "switch_popup");
-            // close icon
-            popup.append("button")
-                .attr("type", "button")
-                .attr("class", "close")
-                .append("span")
-                    .html('&times;')
-                    // removing the popup
-                    .on("click", function(d) {
-                            d3.select(".canvas")
-                            .selectAll(".popup")
-                            .remove();
-                        });
-            // popup content
-            popup.append("div").attr("class","popup_header")
-                .text(dpid);
-            popup.append("div").attr("class","popup_header")
-                .text("Interfaces (" + data.length + "):")
-            popup.append("hr");
-            var popup_body = popup.append("div")
-                .attr("class","popup_body")
-
-            var update_popup_body = popup_body.selectAll("p").data(data);
-            update_popup_body
-                .enter()
-                .append("p")
-                .append("a")
-
-                // adding click function
-                .on("click", function(d) {
-                    popup.selectAll(".popup_body").remove();
-                    var popup_body = popup.append("div")
-                        .attr("class","popup_body")
-                    popup_body.append("p").text("Port n.: " + d.port_no);
-                    popup_body.append("p").text("Port name: " + d.name);
-                    popup_body.append("p").text("Port speed: " + format_speed(d.speed));
-                    popup_body.append("p").text("Port uptime: " + d.uptime);
-                    // adding back button
-                    popup_body.append("p")
-                        .append("a")
-                        .text("back")
-                        .on("click", function() { popup_switch(dpid, data); });
-                 })
-                .text(function(d) { return d.port_no + " - " + d.name; })
-                ;
-            update_popup_body.exit();
         }
 
         // AJAX call
@@ -820,6 +793,75 @@ var SDNTopology = function() {
             });
         }
     }
+
+    this._render_html_popup_ports = function(dpid, jsonObj) {
+        /**
+        Callback to be used with the AJAX that retrieve switch ports.
+        */
+
+        var popup_switch = function(dpid, data) {
+            // remove possible popups
+            d3.select(".canvas")
+                .selectAll(".popup")
+                .remove();
+
+             // Build the popup
+            popup = d3.select(".canvas")
+                .append("div")
+                .attr("class", "popup")
+                .attr("id", "switch_popup");
+            // close icon
+            popup.append("button")
+                .attr("type", "button")
+                .attr("class", "close")
+                .append("span")
+                    .html('&times;')
+                    // removing the popup
+                    .on("click", function(d) {
+                        d3.select(".canvas")
+                        .selectAll(".popup")
+                        .remove();
+                    });
+            // popup content
+            popup.append("div")
+                .attr("class","popup_header")
+                .text(dpid);
+            popup.append("div")
+                .attr("class","popup_header")
+                .text("Interfaces (" + data.length + "):")
+            popup.append("hr");
+            var popup_body = popup
+                .append("div")
+                .attr("class","popup_body")
+
+            var update_popup_body = popup_body
+                .selectAll("p")
+                .data(data)
+                .enter()
+                    .append("p")
+                        .append("a")
+                            // adding click function
+                            .on("click", function(d) {
+                                popup.selectAll(".popup_body").remove();
+                                var popup_body = popup.append("div").attr("class","popup_body")
+                                popup_body.append("p").text("Port n.: " + d.port_no);
+                                popup_body.append("p").text("Port name: " + d.name);
+                                popup_body.append("p").text("Port speed: " + format_speed(d.speed));
+                                popup_body.append("p").text("Port uptime: " + d.uptime);
+                                // adding back button
+                                popup_body.append("p")
+                                    .append("a")
+                                    .text("back")
+                                    .on("click", function() { popup_switch(dpid, data); });
+                             })
+                            .text(function(d) { return d.port_no + " - " + d.name; });
+            update_popup_body.exit();
+        }
+
+        popup_switch(dpid, jsonObj);
+
+    }
+
 
     /**
      * Render HTML of the topology.
@@ -871,6 +913,23 @@ var SDNTopology = function() {
             $('#topology__elements__list').html(html_content);
         }
     }
+
+    /**
+     * Show the trace form to trigger the SDN Trace.
+     * It has three forms, to L2, L3 and full trace.
+     * We use modal forms over the layout.
+     */
+    this.show_trace_form = function(d) {
+        // setting switch label
+        $('#sdn-trace-form-switch-content').html(d.label + " - " + d.dpid);
+
+        sdntopology.call_get_switch_ports(d.dpid, sdntrace._render_html_trace_form_ports);
+
+
+        // open modal dialog
+        sdn_trace_form_dialog.dialog("open");
+    }
+
 }
 
 var Link = function() {
@@ -1022,17 +1081,26 @@ var D3JS = function() {
      * We use the sdntopology.switch list to create the nodes and expect that the topology will have the same
      * node identification to draw the network edges.
      */
-    this._create_network_nodes = function(with_colors, with_trace) {
+    this._create_network_nodes = function(with_colors, with_trace, update_current=false) {
         // create an array with nodes
         var nodesArray = [];
         for (x = 0; x < sdntopology.switches.length; x++) {
             // positioning in spiral mode to help the physics animation and prevent crossing lines
             node_obj = sdntopology.switches[x].get_d3js_data()
 
+            if (update_current) {
+                for (y = 0; y < this.nodes.length; y++) {
+                    if (this.nodes[y].id == node_obj.id) {
+                        node_obj = this.nodes[y];
+                    }
+                }
+            }
+
             nodesArray.push(node_obj);
         }
         this.nodes = nodesArray;
     }
+
 
     /**
      * Check if edge object already exists inside an array of edges.
@@ -1055,7 +1123,7 @@ var D3JS = function() {
      * This function can be used to create the topology, topology with color and
      * topology with tracing.
      */
-    this._create_network_edges = function(with_colors, with_trace) {
+    this._create_network_edges = function(with_colors, with_trace, update_current=false) {
         var edgesArray = [];
 
         // verify topology to create edges
@@ -1071,17 +1139,29 @@ var D3JS = function() {
 
             speed = sdntopology.topology[x].speed;
 
-            source = this.findNode(node_from_id) || this.nodes.push({name: node_from_id});
-            target = this.findNode(node_to_id) || this.nodes.push({name: node_to_id});
+            source = this.findNode(node_from_id) || this.nodes.push({dpid:node_from_id, name: node_from_id});
+            target = this.findNode(node_to_id) || this.nodes.push({dpid:node_to_id, name: node_to_id});
 
             source_label = {name: label_from, num: label_num_from};
             target_label = {name: label_to, num: label_num_to};
 
-            edgeObj = {id:x, name:x, source: source, target: target, source_label:source_label, target_label:target_label, speed:speed, arrows:'to', type: "suit"};
+            id = source.dpid + "," + target.dpid;
+
+            edgeObj = {id:id, name:x, source: source, target: target, source_label:source_label, target_label:target_label, speed:speed, arrows:'to', type: "suit"};
             edgeObj.color = sdncolor.LINK_COLOR['switch'];
 
             // Verify trace to change edge colors and labels.
             has_edge_path_obj = this._has_edge_path(edgesArray, edgeObj);
+
+            // Update current link instead of creating a new one
+            if (update_current) {
+                for (y = 0; y < this.edges.length; y++) {
+                    if (this.edges[y].id == edgeObj.id) {
+                        edgeObj = this.edges[y];
+                    }
+                }
+            }
+
             edgesArray.push(edgeObj);
 
             // adding port as a node
@@ -1126,23 +1206,54 @@ var D3JS = function() {
             links: []
         };
 
-
         this.resetAllNodes();
 
         // create an array with nodes
         this._create_network_nodes(with_colors, with_trace);
         data.nodes = this.nodes;
-        // Node attribute to store json data
-        data.nodes_data = this.nodes;
 
         // create an array with edges
         this._create_network_edges(with_colors, with_trace);
+        data.links = this.edges;
+
+        // Link attribute to store json data
+        data.edges_data = this.edges;
+
+        // creating Force Graph nodes
+        // Set the new data
+        forcegraph.data(data);
+        // Create the graph object
+        // Having myGraph in the global scope makes it easier to call it from a json function or anywhere in the code (even other js files).
+        forcegraph.draw();
+        // Draw the graph for the first time
+    }
 
 
-        // creating Force Graph paths
-        for (var key in this.edges) {
-            data.links.push(this.edges[key]);
-        }
+    this.add_new_node = function() {
+        with_colors = typeof with_colors !== 'undefined' ? with_colors : true;
+        with_trace = typeof with_trace !== 'undefined' ? with_trace : true;
+
+        var data = forcegraph.data();
+
+        // create a network
+        var selector = "#topology__canvas";
+
+        // fake id TODO: test new node
+        var fake_dpid = Math.floor((Math.random() * 100000000) + 1);;
+        var fake_switch_obj = new Switch(fake_dpid);
+        sdntopology.switches.push(fake_switch_obj);
+
+        // create an array with nodes
+        this._create_network_nodes(with_colors, with_trace, true);
+        data.nodes = this.nodes;
+
+        // TODO: fake link
+        var fake_link = {node1: "0000000000000001" , node2:fake_dpid, label1:"", label2:"", speed:"1"}
+        sdntopology.topology.push(fake_link);
+
+        // create an array with edges
+        this._create_network_edges(with_colors, with_trace, true);
+        data.links = this.edges;
 
         // Link attribute to store json data
         data.edges_data = this.edges;
@@ -1196,14 +1307,11 @@ $(function() {
             $('.source-label').hide();
             d3.selectAll(".node_port").style("visibility", "hidden");
             d3.selectAll(".text_port").style("visibility", "hidden");
-
-
         } else {
             $('.target-label').show();
             $('.source-label').show();
             d3.selectAll(".node_port").style("visibility", "visible");
             d3.selectAll(".text_port").style("visibility", "visible");
-
         }
     });
     // Topology speed link labels handler
@@ -1214,6 +1322,13 @@ $(function() {
             $('.speed-label').show();
         }
     });
+
+    // TODO: test adding node to the force graph
+    $('#topology__toolbar__btn__add_node').click(function() {
+        d3lib.add_new_node();
+    });
+
+
 
     // Initialize classes
     sdncolor = new SDNColor();
@@ -1232,3 +1347,7 @@ $(function() {
     // initial data load (switch list, topology, colors)
     _initial_data_load();
 });
+
+
+
+

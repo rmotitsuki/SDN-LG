@@ -63,7 +63,6 @@
 /* d3 canvas svg */
 #topology__canvas svg {
   /* height: auto; */
-  border: 1px solid lightgray;
 }
 .node {
   cursor: pointer;
@@ -109,8 +108,44 @@ text {
 }
 .canvas {
     position: relative;
-    width: 960px;
+    width: 100%;
+    height:100%;
 }
+#canvas_info {
+    width: 100%;
+    height:100%;
+}
+#canvas_info_body {
+    height:100%;
+}
+
+.col_fixed_960 {
+/*
+    width:960px;
+    height:600px;
+*/
+    width: 100%;
+    height:100%;
+    position:relative;
+    float:left;
+}
+.col_fixed_960 > .panel-body {
+    width: 100%;
+    height:100%;
+}
+
+.col_offset_960{
+    /*
+    padding-left:960px;
+    height:600px;
+    */
+}
+#canvas_info_body .panel {
+    /*
+    height:600px;
+    */
+}
+
 .svg-container {
     display: inline-block;
     position: relative;
@@ -191,4 +226,36 @@ text {
 }
 #topology__elements li {
   list-style:none;
+}
+#topology__canvas {
+    width: 100%;
+    height:100%;
+}
+
+/* topology info frame */
+/* switch data */
+#canvas_info_body ul {
+    padding: 0;
+}
+#canvas_info_body li {
+    list-style-type: none;
+
+}
+
+/* Trace form to submit data */
+.ui-dialog {
+    z-index: 1000;
+}
+#sdn-trace-form {
+    width: 100%;
+}
+#sdn-trace-form .row {
+    margin: 0;
+}
+#sdn-trace-form-ports-filter-row.row,
+#sdn-trace-form-switch-filter-row.row {
+    margin-top: 10px;
+}
+#sdn-trace-form-row-forms {
+    overflow: hidden;
 }
