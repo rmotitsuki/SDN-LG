@@ -51,10 +51,6 @@ var MOCK_JSON_SWITCH_PORTS = '[' +
     '{ "name": "10Gigabit7", "port_no": 7, "speed": 10000000000, "uptime": 1007698},' +
     '{ "name": "10Gigabit8", "port_no": 8, "speed": 10000000000, "uptime": 418707 }' +
     ']';
-// Mock json trace
-var MOCK_JSON_TRACE = '["0000000000000001", "0000000000000002", "0000000000000003"]';
-var MOCK_JSON_TRACE = '["0000000000000001", "0000000000000002", "0000000000000003"]';
-
 
 var SPEED_100GB = 100000000000;
 var SPEED_10GB = 10000000000;
@@ -147,11 +143,11 @@ var ForceGraph = function(p_selector, p_data) {
          a: source switch dpid
          b: target switch dpid
         */
-        _linkedByIndex.set(a + "," + b, true);
+        _linkedByIndex.set(a + "-" + b, true);
     }
 
 	function isConnected(a, b) {
-        return _linkedByIndex.has(a.dpid + "," + b.dpid) || _linkedByIndex.has(b.dpid + "," + a.dpid) || a.dpid == b.dpid;
+        return _linkedByIndex.has(a.dpid + "-" + b.dpid) || _linkedByIndex.has(b.dpid + "-" + a.dpid) || a.dpid == b.dpid;
     }
 
     // zoom behavior
@@ -207,9 +203,9 @@ var ForceGraph = function(p_selector, p_data) {
                     }
                     return DISTANCE['switch'];
                 })
-                .strength(0.5)
+                .strength(0.1)
         )
-        .force("charge", d3.forceManyBody().strength(-40))
+        .force("charge", d3.forceManyBody().strength(-100))
         .force("center", d3.forceCenter(width / 2, height / 2))
     .alphaTarget(0.05)
     .on("tick", ticked);
@@ -444,20 +440,23 @@ var ForceGraph = function(p_selector, p_data) {
 
         // draw link paths
         path = path.data(_data.links, function(d) { return d.id; });
-
+        path.exit().remove();
         path = path
             .enter()
                 .append("line")
+                    .attr("id", function(d) {
+                        return "link-" + d.id;
+                    })
                     .attr("class", function(d) {
                         var return_var = "";
                         if (d.speed >= SPEED_100GB) {
-                            return_var = return_var + "link-path link-large";
+                            return_var = return_var + " link-path link-large";
                         } else if (d.speed >= SPEED_10GB) {
-                            return_var = return_var + "link-path link-medium";
+                            return_var = return_var + " link-path link-medium";
                         } else if (d.speed >= SPEED_1GB) {
-                            return_var = return_var + "link-path link-thin";
+                            return_var = return_var + " link-path link-thin";
                         }
-                        return_var = return_var + "link-path link " + d.type;
+                        return_var = return_var + " link-path link " + d.type;
                         return return_var;
                     })
                     .attr("marker-end", function(d) { return "url(#" + d.type + ")"; })
@@ -466,15 +465,16 @@ var ForceGraph = function(p_selector, p_data) {
                             return '#fff';
                         }
                         return d.color;
-                    });
+                    })
+                    .merge(path);
 
         // switch draw
         node = node.data(_data.nodes, function(d) { return d.id;});
-
+        node.exit().remove();
         node = node
             .enter()
                 .append("circle")
-                //teste
+                .attr("id", function(d) { return "node-" + d.id; })
                 .attr("r", function(d) { return SIZE[d.type]||nominal_base_node_size; })
                 .attr("fill", function(d) { return d.background_color; })
                 .style(tocolor, function(d) { return d.background_color; })
@@ -482,9 +482,9 @@ var ForceGraph = function(p_selector, p_data) {
                     if (d.type == 'port') { return " node_port"; }
                     return "";
                 })
-                .style("visibility", function(d) {
-                    if (d.type == 'port') { return "hidden"; }
-                    return "visible";
+                .style("display", function(d) {
+                    if (d.type == 'port') { return "none"; }
+                    return "";
                 })
                 .on('contextmenu', d3.contextMenu(menu)) // attach menu to element
                 .on("mouseover", function(d) {
@@ -516,7 +516,9 @@ var ForceGraph = function(p_selector, p_data) {
                 .call(d3.drag()
                     .on("start", _nodeDragstarted)
                     .on("drag", _nodeDragged)
-                    .on("end", _nodeDragended));
+                    .on("end", _nodeDragended))
+                .merge(node);
+
 
     	var tocolor = "fill";
         var towhite = "stroke";
@@ -524,9 +526,11 @@ var ForceGraph = function(p_selector, p_data) {
             tocolor = "stroke"
             towhite = "fill"
         }
+
         // draw switch label
+        text = text.data(_data.nodes, function(d) { return d.id;});
+        text.exit().remove();
         text = text
-            .data(_data.nodes, function(d) { return d.id;})
             .enter()
                 .append("text")
                     .attr("class", function(d) {
@@ -535,19 +539,22 @@ var ForceGraph = function(p_selector, p_data) {
                     })
                     .attr("x", 0)
                     .attr("y", ".1em")
-                    .style("visibility", function(d) {
-                        if (d.type == 'port') { return "hidden"; }
-                        return "visible";
+                    .style("display", function(d) {
+                        if (d.type == 'port') { return "none"; }
+                        return "";
                     })
-                    .text(function(d) { if(d.label) return d.label; return d.name; });
+                    .text(function(d) { if(d.label) return d.label; return d.name; })
+                    .merge(text);
 
         // draw link label
+        link_label = link_label.data(_data.links);
+        link_label.exit().remove();
         link_label = link_label
-            .data(_data.links)
             .enter()
                 .append("text")
                     .attr("class", "speed-label")
-                    .text(function(d) { return format_speed(d.speed); });
+                    .text(function(d) { return format_speed(d.speed); })
+                    .merge(link_label);
 
         // setting data
         force.nodes(_data.nodes, function(d) { return d.id;});
@@ -613,6 +620,7 @@ var SDNColor = function() {
         return result;
     }
 }
+
 
 
 var SDNTopology = function() {
@@ -725,7 +733,6 @@ var SDNTopology = function() {
                 sdntopology.render_html_topology();
 
                 // render D3 force
-                $('#topology__canvas').show();
                 d3lib.render_topology();
             }
         }
@@ -1070,9 +1077,11 @@ var D3JS = function() {
      * You must load the sdntopology switch and topology data before trying to render the topology.
      */
     this.render_topology = function() {
+        $('#topology__canvas').show();
         this._render_network(false, false);
     }
     this.render_topology_colors = function() {
+        $('#topology__canvas').show();
         this._render_network(true, false);
     }
 
@@ -1145,7 +1154,7 @@ var D3JS = function() {
             source_label = {name: label_from, num: label_num_from};
             target_label = {name: label_to, num: label_num_to};
 
-            id = source.dpid + "," + target.dpid;
+            id = source.dpid + "-" + target.dpid;
 
             edgeObj = {id:id, name:x, source: source, target: target, source_label:source_label, target_label:target_label, speed:speed, arrows:'to', type: "suit"};
             edgeObj.color = sdncolor.LINK_COLOR['switch'];
@@ -1228,6 +1237,7 @@ var D3JS = function() {
         // Draw the graph for the first time
     }
 
+    var fake_last_node = null;
 
     this.add_new_node = function() {
         with_colors = typeof with_colors !== 'undefined' ? with_colors : true;
@@ -1248,8 +1258,14 @@ var D3JS = function() {
         data.nodes = this.nodes;
 
         // TODO: fake link
-        var fake_link = {node1: "0000000000000001" , node2:fake_dpid, label1:"", label2:"", speed:"1"}
-        sdntopology.topology.push(fake_link);
+        if (fake_last_node == null) {
+            var fake_link = {node1: "0000000000000001" , node2:fake_dpid, label1:"", label2:"", speed:"1"}
+            sdntopology.topology.push(fake_link);
+        } else {
+            var fake_link = {node1: fake_last_node , node2:fake_dpid, label1:"", label2:"", speed:"1"}
+            sdntopology.topology.push(fake_link);
+        }
+        fake_last_node = fake_dpid;
 
         // create an array with edges
         this._create_network_edges(with_colors, with_trace, true);
@@ -1260,11 +1276,19 @@ var D3JS = function() {
 
         // creating Force Graph nodes
         // Set the new data
-        forcegraph.data(data);
+        //forcegraph.data(data);
         // Create the graph object
         // Having myGraph in the global scope makes it easier to call it from a json function or anywhere in the code (even other js files).
         forcegraph.draw();
         // Draw the graph for the first time
+    }
+
+    this.trace = function() {
+        //  TODO: test trace. check node and link id and change the stroke, stroke width.
+        // create a clear trace method to reset the colors
+
+
+
     }
 
     this.resetAllNodes = function() {
@@ -1305,13 +1329,13 @@ $(function() {
         if ($(this).hasClass("active")) {
             $('.target-label').hide();
             $('.source-label').hide();
-            d3.selectAll(".node_port").style("visibility", "hidden");
-            d3.selectAll(".text_port").style("visibility", "hidden");
+            d3.selectAll(".node_port").style("display", "none");
+            d3.selectAll(".text_port").style("display", "none");
         } else {
             $('.target-label').show();
             $('.source-label').show();
-            d3.selectAll(".node_port").style("visibility", "visible");
-            d3.selectAll(".text_port").style("visibility", "visible");
+            d3.selectAll(".node_port").style("display", "none");
+            d3.selectAll(".text_port").style("display", "none");
         }
     });
     // Topology speed link labels handler
