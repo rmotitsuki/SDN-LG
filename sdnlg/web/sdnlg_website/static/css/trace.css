@@ -1,0 +1,11 @@
+/**
+ D3 trace
+*/
+
+
+/* use important because the highlight is changing the style attribute */
+.node-trace-active,
+.link-trace-active {
+    stroke: rgb(89, 179, 42) !important;
+    stroke-width: 6px !important;
+}

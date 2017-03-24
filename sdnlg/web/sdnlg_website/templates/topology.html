@@ -4,6 +4,7 @@
     <script src="{{ url_for('static', filename='js/topology.js') }}"></script>
     <script src="{{ url_for('static', filename='js/trace.js') }}"></script>
     <link href="{{ url_for('static', filename='css/topology.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/trace.css') }}" rel="stylesheet">
     <script src="{{ url_for('static', filename='jslib/jquery.splitter.js') }}"></script>
     <link href="{{ url_for('static', filename='jslib/jquery.splitter.css') }}" rel="stylesheet">
 {% endblock %}
@@ -65,39 +66,71 @@ jQuery(function($) {
                 <div id="canvas_info" class="col_offset_960">
                     <div id="canvas_info_body">
                         <div id="switch_panel_info" style="display:;" class="panel panel-default">
-                          <div class="panel-heading">Switch</div>
-                          <div class="panel-body">
-                            <div>
-                              <ul>
-                                <li id="switch_panel_info_name"><span>Name: </span><span id="switch_panel_info_name_value"></span></li>
-                                <li id="switch_panel_info_dpid"><span>DPID: </span><span id="switch_panel_info_dpid_value"></span></li>
-                                <li id="switch_panel_info_flows"><span>N. Flows: </span><span id="switch_panel_info_flows_value"></span></li>
-                              </ul>
-                            </div>
+                          <div class="panel-heading">
+                              <h4 class="panel-title">
+                                <a data-toggle="collapse" href="#switch_panel_info_collapse">Switch</a>
+                              </h4>
                           </div>
+                          <div id="switch_panel_info_collapse" class="panel-collapse collapse">
+                              <div class="panel-body">
+                                <div>
+                                  <ul>
+                                    <li id="switch_panel_info_name"><span>Name: </span><span id="switch_panel_info_name_value"></span></li>
+                                    <li id="switch_panel_info_dpid"><span>DPID: </span><span id="switch_panel_info_dpid_value"></span></li>
+                                    <li id="switch_panel_info_flows"><span>N. Flows: </span><span id="switch_panel_info_flows_value"></span></li>
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
                         </div>
                         <div id="port_panel_info" style="" class="panel panel-default">
-                          <div class="panel-heading">Port</div>
-                          <div class="panel-body">
-                            <div>
-                              <ul>
-                                <li id="port_panel_info_name"><span>Name: </span><span id="port_panel_info_name_value"></span></li>
-                                <li id="port_panel_info_number"><span>Number: </span><span id="port_panel_info_number_value"></span></li>
-                                <li id="port_panel_info_flows"><span>N. Flows: </span><span id="port_panel_info_flows_value"></span></li>
-                              </ul>
-                            </div>
+                          <div class="panel-heading">
+                              <h4 class="panel-title">
+                                <a data-toggle="collapse" href="#port_panel_info_collapse">Port</a>
+                              </h4>
+                          </div>
+                          <div id="port_panel_info_collapse" class="panel-collapse collapse">
+                              <div class="panel-body">
+                                <div>
+                                  <ul>
+                                    <li id="port_panel_info_name"><span>Name: </span><span id="port_panel_info_name_value"></span></li>
+                                    <li id="port_panel_info_number"><span>Number: </span><span id="port_panel_info_number_value"></span></li>
+                                    <li id="port_panel_info_flows"><span>N. Flows: </span><span id="port_panel_info_flows_value"></span></li>
+                                  </ul>
+                                </div>
+                              </div>
                           </div>
                         </div>
                         <div id="switch_to_panel_info" style="display:;" class="panel panel-default">
-                          <div class="panel-heading">Switch Connected</div>
-                          <div class="panel-body">
-                            <div>
-                              <ul>
-                                <li id="switch_to_panel_info_name"><span>Name:</span><span id="switch_to_panel_info_name_value"></span></li>
-                                <li id="switch_to_panel_info_dpid"><span>DPID: </span><span id="switch_to_panel_info_dpid_value"></span></li>
-                                <li id="switch_to_panel_info_flows"><span>N. Flows: </span><span id="switch_to_panel_info_flows_value"></span></li>
-                              </ul>
-                            </div>
+                          <div class="panel-heading">
+                              <h4 class="panel-title">
+                                <a data-toggle="collapse" href="#switch_to_panel_info_collapse">Switch Connected</a>
+                              </h4>
+                          </div>
+                          <div id="switch_to_panel_info_collapse" class="panel-collapse collapse">
+                              <div class="panel-body">
+                                <div>
+                                  <ul>
+                                    <li id="switch_to_panel_info_name"><span>Name:</span><span id="switch_to_panel_info_name_value"></span></li>
+                                    <li id="switch_to_panel_info_dpid"><span>DPID: </span><span id="switch_to_panel_info_dpid_value"></span></li>
+                                    <li id="switch_to_panel_info_flows"><span>N. Flows: </span><span id="switch_to_panel_info_flows_value"></span></li>
+                                  </ul>
+                                </div>
+                              </div>
+                          </div>
+                        </div>
+                        <div id="trace_panel_info" style="display:;" class="panel panel-default">
+                          <div class="panel-heading">
+                              <h4 class="panel-title">
+                                <a data-toggle="collapse" href="#trace_panel_info_collapse">Trace Result</a>
+                              </h4>
+                          </div>
+                          <div id="trace_panel_info_collapse" class="panel-collapse collapse">
+                              <div class="panel-body" >
+                                <div class="loading-icon-div"></div>
+                                <div id="trace-result-content">
+                                </div>
+                              </div>
                           </div>
                         </div>
                     </div>
@@ -325,12 +358,6 @@ jQuery(function($) {
                                     </div>
                                 </div>
                             </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="panel panel-default" id="trace-result-panel">
-                    <div class="panel-body">
-                        <div id="trace-result-content">
                         </div>
                     </div>
                 </div>

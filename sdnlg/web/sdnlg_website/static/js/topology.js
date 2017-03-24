@@ -188,7 +188,6 @@ var ForceGraph = function(p_selector, p_data) {
             return _data;
         }
         _data = value;
-        console.log(value);
 
         return this;
     }
@@ -210,15 +209,21 @@ var ForceGraph = function(p_selector, p_data) {
     .alphaTarget(0.05)
     .on("tick", ticked);
 
+    // OBS: SVG Document order is important!
+    // Draw order:
+    //     links
+    //     nodes
+    //     labels
+
+    // draw link paths
+    var path = container.append("g")
+        .attr("class", "paths")
+        .selectAll("path");
     // switch node
     var node = container
         .append("g")
         .attr("class", "nodes")
         .selectAll("circle")
-    // draw link paths
-    var path = container.append("g")
-        .attr("class", "paths")
-        .selectAll("path");
     // draw switch label
     var text = container.append("g").selectAll("text");
     // draw link label
@@ -242,9 +247,8 @@ var ForceGraph = function(p_selector, p_data) {
         if (d.type == 'port') { return " node_port"; }
         if (!d3.event.active) force.alphaTarget(0);
         focus_node = null;
-        exit_highlight(d);
+        forcegraph.exit_highlight(d);
     }
-
 
 
     // Highlight onclick functions
@@ -270,13 +274,15 @@ var ForceGraph = function(p_selector, p_data) {
             return o.source.index == d.index || o.target.index == d.index ? sdncolor.LINK_COLOR_HIGHLIGHT['switch'] : sdncolor.LINK_COLOR['switch'];
         });
     }
-    function exit_highlight(d) {
+
+
+    this.exit_highlight = function(d) {
         svg.style("cursor","move");
         node.attr("fill", function(o) { return o.background_color; })
             .style("opacity", 1);
             //.style(towhite, "white");
         path.style("opacity", 1)
-            .style("stroke", function(o) { return sdncolor.LINK_COLOR[d.type]; });
+            .style("stroke", function(o) { return sdncolor.LINK_COLOR[o.type]; });
         text.style("opacity", 1)
             .style("font-weight", "normal");;
     }
@@ -331,7 +337,6 @@ var ForceGraph = function(p_selector, p_data) {
         if(d && d.data) {
             $('#port_panel_info').show();
             var name = d.data.label;
-            console.log(name);
             if (name && name.length > 0) {
                 $('#port_panel_info_name').show();
                 $('#port_panel_info_name_value').html(name);
@@ -503,12 +508,12 @@ var ForceGraph = function(p_selector, p_data) {
                 })
                 .on("mouseout", function(d) {
                     if (d.type == 'port') { return; }
-                    if (focus_node === null) { exit_highlight(d); }
+                    if (focus_node === null) { forcegraph.exit_highlight(d); }
                 })
                 .on("click", function(d) {
                     if (d.type == 'port') { return; }
                     focus_node = null;
-                    exit_highlight(d);
+                    forcegraph.exit_highlight(d);
                 })
                 .on("dblclick.zoom", function(d) {
                     d3.event.stopPropagation();
@@ -557,8 +562,8 @@ var ForceGraph = function(p_selector, p_data) {
                     .merge(link_label);
 
         // setting data
-        force.nodes(_data.nodes, function(d) { return d.id;});
         force.force("link").links(_data.links, function(d) { return d.source.id + "-" + d.target.id; });
+        force.nodes(_data.nodes, function(d) { return d.id;});
 
         // restart force animation
         force.restart();

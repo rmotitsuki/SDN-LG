@@ -20,58 +20,37 @@ var SDNTrace = function() {
     // last trace id executing
     this.last_trace_id = "";
 
-    this.call_trace_port = function(json_data) {
-    /**
-     * Call ajax to trace.
-     * Param:
-     *    json_data: Data in json String format to send as PUT method.
-     */
+    this.clear_trace_interface = function() {
+        /**
+        * Clear trace forms, result, result pannel, dialog modal, graph highlight, graph trace
+        */
         $('#trace-result-content').html('');
         $('.loading-icon-div').show();
 
+        // clear d3 graph highlight nodes, links
+        forcegraph.exit_highlight();
+
+        // clear d3 graph trace classes
+        $("circle").removeClass("node-trace-active");
+        $("line").removeClass("link-trace-active");
+
+        // close modal trace form
+        sdn_trace_form_dialog.dialog( "close" );
+    }
+
+    this.call_trace_port = function(json_data) {
+        /**
+         * Call ajax to trace.
+         * Param:
+         *    json_data: Data in json String format to send as PUT method.
+         */
+        sdntrace.clear_trace_interface();
+
+
         var ajax_done = function(json) {
-            console.log('call_trace_port ajax_done');
-            console.log(json);
-
+            // Trigger AJAX to retrieve the trace result
             sdntrace.trigger_trace_listener(json);
-
-//            var jsonObj;
-//            jsonObj= json;
-//
-//            // reseting sdntrace tracing variables
-//            sdntrace.has_trace_loop = false;
-//            sdntrace.trace = [];
-//
-//            // storing first element of trace;
-//            sdntrace.trace.push({id:$('#switches_select').val(), port:$('#switch_port_hidden').val()});
-//
-//            html_content = ""
-//            html_content += "<div class='row'><div class='col-sm-12'>Trace result: </div></div><div class='row'>";
-//            html_content += "<div class='col-sm-10 col-md-5'><table class='table table-striped'>"
-//            html_content += "<thead><tr><th>Switch/DPID</th><td>Incoming Port</th></tr></thead>"
-//            html_content += "<tbody>"
-//
-//            $.each( jsonObj, function( key, val ) {
-//                if (val == 'loop') {
-//                    html_content += "<tr><td>" + val + "</td></tr>";
-//                    // flag looping switch.
-//                    sdntrace.has_trace_loop = true;
-//                } else {
-//                    html_content += "<tr><td>";
-//
-//                    var temp_switch = new Switch(val['trace']['dpid']);
-//                    html_content += temp_switch.get_name_or_id();
-//
-//                    html_content += "</td>";
-//                    html_content += "<td>" + val['trace']['port'] + "</td></tr>";
-//                    sdntrace.trace.push({id:val['trace']['dpid'], port:val['trace']['port']});
-//                }
-//            });
-//            html_content += "</tbody></table></div></div>";
-//
-//            $('#trace-result-content').html(html_content);
         }
-
 
         // AJAX call
         if (DEBUG) {
@@ -97,7 +76,7 @@ var SDNTrace = function() {
             })
             .always(function() {
                 $('.loading-icon-div').hide();
-                $('#trace-result-panel').show();
+                $('#trace_panel_info').show();
             });
         }
     }
@@ -263,75 +242,122 @@ var SDNTrace = function() {
     }
 
 
-    // interval flag to stop the trace listener
-    var interval_trace_listener = "";
+    // Timeout flag to stop the trace listener
+    var _thread_trace_listener = "";
+    // Time to trigger the next call in ms
+    var _trace_timer_trigger_call = 1000;
+    // Total time to trigger the call. After that trigger timeout method.
+    var _trace_timer_max = 20000;
 
-    var _interval_trace_timer_variable = 1000;
-    var _interval_trace_timer_max = 20000;
-
+    var _trace_timer_counter = 0;
 
     this.trigger_trace_listener = function(trace_id) {
         sdntrace.last_trace_id = trace_id;
 
-        _interval_trace_timer_counter = 0;
-        clearInterval(interval_trace_listener);
+        // Stopping any ongoing trace.
+        sdntrace.trace_stop();
 
-        interval_trace_listener = setInterval(this.call_trace_listener, 1000);
+        // Clearing the trace panel
+        $('#trace-result-content').html("");
+        $('#trace_panel_info_collapse').collapse("hide");
+
+        // Call to AJAX to retrieve the trace result
+        this.call_trace_listener(trace_id);
     }
 
-    var last_result = "";
-    var _interval_trace_timer_counter = 0;
+    this.trace_stop = function() {
+        _thread_trace_listener = "";
+        _trace_timer_counter = 0;
 
-    this.call_trace_listener = function() {
+        clearTimeout(_thread_trace_listener);
+    }
+
+    this.call_trace_listener = function(trace_id) {
+
+        var html_render = function(jsonObj) {
+            /**
+            * Render trace result html info.
+            */
+            html_content = ""
+            html_content += "<div class='row'>";
+            html_content += "<div class='col-sm-12'>";
+            html_content += "<strong>Start time:</strong>" + jsonObj.start_time;
+            html_content += "<br>";
+            html_content += "<strong>Total time:</strong>" + jsonObj.total_time;
+            html_content += "<hr>";
+            html_content += "</div>";
+            html_content += "<div class='col-sm-12'>";
+            html_content += "<table class='table table-striped'>";
+            html_content += "<thead><tr><th></th><th>Switch/DPID</th><th>Incoming Port</th><th>Time</th></tr></thead>";
+            html_content += "<tbody>";
+
+            for (var i = 0, len = jsonObj.result.length; i < len; i++) {
+                html_content += "<tr data-type="+ jsonObj.result[i].type +">";
+                html_content += "<td>" + (i+1) + "</td>";
+                if (jsonObj.result[i].type == "starting") {
+                    html_content += "<td>" + jsonObj.result[i].dpid + "</td>";
+                    html_content += "<td>" + jsonObj.result[i].port + "</td>";
+                    html_content += "<td>" + "</td>";
+                } else if (jsonObj.result[i].type == "trace") {
+                    html_content += "<td>" + jsonObj.result[i].dpid + "</td>";
+                    html_content += "<td>" + jsonObj.result[i].port + "</td>";
+                    html_content += "<td>" + jsonObj.result[i].time + "</td>";
+                } else if (jsonObj.result[i].type = "last") {
+                    html_content += "<td></td>";
+                    html_content += "<td></td>";
+                    html_content += "<td>" + jsonObj.result[i].time + "</td>";
+                } else if (jsonObj.result[i].type = "error") {
+                    html_content += "<td colspan='3'>" + jsonObj.result[i].message + "</td>";
+                }
+                html_content += "</tr>";
+            }
+
+            html_content += "</tbody></table></div></div>";
+
+            $('#trace-result-content').html(html_content);
+            $('#trace_panel_info_collapse').collapse("show");
+        }
 
         var ajax_done = function(jsonObj) {
-            console.log("call_trace_listener");
+            if (_thread_trace_listener == "") {
+                return;
+            }
+            console.log("call_trace_listener jsonObj");
             console.log(jsonObj);
 
-            if (!last_result.hasOwnProperty("result") || jsonObj.result.length > last_result.result.length) {
-                var last_result_item = jsonObj.result[jsonObj.result.length - 1];
-                if (last_result_item.type == "last") {
-                    // stop the interval loop
-                    clearInterval(interval_trace_listener);
-
-                    // TODO: show messages
-                    console.log("trace OK");
-                    console.log(jsonObj.total_time);
-                }
-
+            if (jsonObj.result.length > 0) {
                 for (var i = 0, len = jsonObj.result.length; i < len; i++) {
                     var result_item = jsonObj.result[i];
-
                     console.log(result_item);
 
                     if (result_item.hasOwnProperty("dpid")) {
-                        console.log($("#node-" + result_item.dpid));
-
                         var css_selector = "#node-" + result_item.dpid;
-
-                        $(css_selector).css("stroke", "blue");
-                        $(css_selector).css("stroke-width", "6px");
+                        $(css_selector).addClass("node-trace-active");
                     }
                     if (i > 0 && jsonObj.result[i-1].hasOwnProperty("dpid") && jsonObj.result[i].hasOwnProperty("dpid")) {
                         var css_selector = "#link-" + jsonObj.result[i-1].dpid +"-"+ jsonObj.result[i].dpid;
-
-                        $(css_selector).css("stroke", "blue");
-                        $(css_selector).css("stroke-width", "6px");
+                        $(css_selector).addClass("link-trace-active");
                     }
                 }
+
+                var last_result_item = jsonObj.result[jsonObj.result.length - 1];
+                if (last_result_item.type == "last") {
+                    // stop the interval loop
+                    sdntrace.trace_stop();
+
+                    // TODO: show messages
+                    console.log("trace last item type OK. Total time:" + jsonObj.total_time);
+                }
             }
-
-            last_result = jsonObj;
-        }
-        var timeout = function() {
-            clearInterval(interval_trace_listener);
-            // TODO: show messages
+            html_render(jsonObj);
         }
 
-        _interval_trace_timer_counter = _interval_trace_timer_counter + _interval_trace_timer_variable;
+        // counting the trace time elapsed
+        _trace_timer_counter = _trace_timer_counter + _trace_timer_trigger_call;
+
         // Timeout. Stopping the trace.
-        if(_interval_trace_timer_counter > _interval_trace_timer_max) {
-            timeout();
+        if(_trace_timer_counter > _trace_timer_max) {
+            sdntrace.trace_stop();
             return;
         }
 
@@ -356,6 +382,8 @@ var SDNTrace = function() {
                 console.log( "call_get_switches ajax complete" );
             });
         }
+
+        _thread_trace_listener = setTimeout(this.call_trace_listener, _trace_timer_trigger_call);
     }
 
     /**
@@ -399,7 +427,6 @@ $(function() {
 
     sdntrace = new SDNTrace();
 
-    console.log(sdn_trace_form_dialog);
     // Trace form modal
     sdn_trace_form_dialog = $( "#sdn-trace-form" ).dialog({
       autoOpen: false,
@@ -415,8 +442,6 @@ $(function() {
         sdn_trace_form_dialog.dialog( "close" );
       }
     });
-
-    console.log(sdn_trace_form_dialog);
 
     // Trace form click events to submit forms
     $('#layer2_btn').click(function() {
