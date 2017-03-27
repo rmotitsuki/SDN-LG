@@ -9,6 +9,69 @@ var MOCK_JSON_TRACE_RESULT = '{"total_time": "0:00:03.520170","start_time": "201
     '{"msg": null,"reason": "done","type": "last","time": "0:00:03.519943"}],'+
     '"request_id": 80001}';
 
+var MOCK_JSON_TRACE_RESULT = '{"total_time": "0:00:03.520170","start_time": "2017-03-21 13:30:42.024902",'+
+    '"result": ['+
+    '{"time": "2017-03-21 13:30:42.024902","type": "starting","port": "s1-eth1","dpid": "0000000000000001"},'+
+    '{"time": "0:00:00.510086","type": "trace","port": "s2-eth2","dpid": "0000000000000002"},'+
+    '{"time": "0:00:01.012277","type": "trace","port": "s3-eth2","dpid": "0000000000000003"},'+
+    '{"time": "0:00:01.514501","type": "trace","port": "s4-eth2","dpid": "0000000000000004"},'+
+    '{"msg": null,"reason": "done","type": "last","time": "0:00:03.519943"}],'+
+    '"request_id": 80001}';
+
+var MOCK_JSON_TRACE_RESULT_INTERDOMAIN = '{"total_time": "0:00:05.019943","start_time": "2017-03-21 13:30:42.024902",'+
+    '"result": ['+
+    '{"time": "2017-03-21 13:30:42.024902","type": "starting","port": "s1-eth1","dpid": "0000000000000001"},'+
+    '{"time": "0:00:00.510086","type": "trace","port": "s2-eth2","dpid": "0000000000000002"},'+
+    '{"time": "0:00:01.012277","type": "trace","port": "s3-eth2","dpid": "0000000000000003"},'+
+    '{"time": "0:00:02.514501","type": "intertrace", "domain":"Domain B"},'+
+    '{"time": "0:00:04.014501","type": "intertrace", "domain":"Domain C"},'+
+    '{"time": "0:00:04.514501","type": "trace","port": "s8-eth1","dpid": "0000000000000101"},'+
+    '{"msg": null,"reason": "done","type": "last","time": "0:00:05.019943"}],'+
+    '"request_id": 80001}';
+
+var MOCK_JSON_TRACE_RESULT_PART1 = '{"total_time": "0:00:00","start_time": "2017-03-21 13:30:42.024902",'+
+    '"result": ['+
+    '{"time": "2017-03-21 13:30:42.024902","type": "starting","port": "s1-eth1","dpid": "0000000000000001"}],'+
+    '"request_id": 80001}';
+
+var MOCK_JSON_TRACE_RESULT_PART2 = '{"total_time": "0:00.510086","start_time": "2017-03-21 13:30:42.024902",'+
+    '"result": ['+
+    '{"time": "2017-03-21 13:30:42.024902","type": "starting","port": "s1-eth1","dpid": "0000000000000001"},'+
+    '{"time": "0:00:00.510086","type": "trace","port": "s2-eth2","dpid": "0000000000000002"}],'+
+    '"request_id": 80001}';
+
+var MOCK_JSON_TRACE_RESULT_PART3 = '{"total_time": "0:00:01.514501","start_time": "2017-03-21 13:30:42.024902",'+
+    '"result": ['+
+    '{"time": "2017-03-21 13:30:42.024902","type": "starting","port": "s1-eth1","dpid": "0000000000000001"},'+
+    '{"time": "0:00:00.510086","type": "trace","port": "s2-eth2","dpid": "0000000000000002"},'+
+    '{"time": "0:00:01.012277","type": "trace","port": "s3-eth2","dpid": "0000000000000003"},'+
+    '{"time": "0:00:01.514501","type": "trace","port": "s4-eth2","dpid": "0000000000000004"}],'+
+    '"request_id": 80001}';
+
+var MOCK_JSON_TRACE_RESULT_PART4 = '{"total_time": "0:00:03.520170","start_time": "2017-03-21 13:30:42.024902",'+
+    '"result": ['+
+    '{"time": "2017-03-21 13:30:42.024902","type": "starting","port": "s1-eth1","dpid": "0000000000000001"},'+
+    '{"time": "0:00:00.510086","type": "trace","port": "s2-eth2","dpid": "0000000000000002"},'+
+    '{"time": "0:00:01.012277","type": "trace","port": "s3-eth2","dpid": "0000000000000003"},'+
+    '{"time": "0:00:01.514501","type": "trace","port": "s4-eth2","dpid": "0000000000000004"},'+
+    '{"msg": null,"reason": "done","type": "last","time": "0:00:03.519943"}],'+
+    '"request_id": 80001}';
+var MOCK_JSON_TRACE_RESULT_PART4_ERROR = '{"total_time": "0:00:03.520170","start_time": "2017-03-21 13:30:42.024902",'+
+    '"result": ['+
+    '{"time": "2017-03-21 13:30:42.024902","type": "starting","port": "s1-eth1","dpid": "0000000000000001"},'+
+    '{"time": "0:00:00.510086","type": "trace","port": "s2-eth2","dpid": "0000000000000002"},'+
+    '{"time": "0:00:01.012277","type": "trace","port": "s3-eth2","dpid": "0000000000000003"},'+
+    '{"time": "0:00:01.514501","type": "trace","port": "s4-eth2","dpid": "0000000000000004"},'+
+    '{"msg": "Unknown error","reason": "error","type": "last","time": "0:00:03.519943"}],'+
+    '"request_id": 80001}';
+var MOCK_JSON_TRACE_RESULT_PART4_LOOP = '{"total_time": "0:00:03.520170","start_time": "2017-03-21 13:30:42.024902",'+
+    '"result": ['+
+    '{"time": "2017-03-21 13:30:42.024902","type": "starting","port": "s1-eth1","dpid": "0000000000000001"},'+
+    '{"time": "0:00:00.510086","type": "trace","port": "s2-eth2","dpid": "0000000000000002"},'+
+    '{"time": "0:00:01.012277","type": "trace","port": "s3-eth2","dpid": "0000000000000003"},'+
+    '{"time": "0:00:01.514501","type": "trace","port": "s4-eth2","dpid": "0000000000000004"},'+
+    '{"msg": null,"reason": "loop","type": "last","time": "0:00:03.519943"}],'+
+    '"request_id": 80001}';
 
 // reference to the trace form dialog
 var sdn_trace_form_dialog = '';
@@ -16,6 +79,10 @@ var sdn_trace_form_dialog = '';
 var sdntrace = '';
 
 var SDNTrace = function() {
+
+    var REST_TRACE_TYPE = {'STARTING':'starting', 'LAST':'last', 'TRACE':'trace', 'INTERTRACE':'intertrace'};
+    var REST_TRACE_REASON = {'ERROR':'error', 'DONE':'done', 'LOOP':'loop'}
+
 
     // last trace id executing
     this.last_trace_id = "";
@@ -46,8 +113,11 @@ var SDNTrace = function() {
          */
         sdntrace.clear_trace_interface();
 
-
         var ajax_done = function(json) {
+            // Stopping any ongoing trace.
+            console.log('TRACE start new trace.');
+            sdntrace.trace_stop();
+
             // Trigger AJAX to retrieve the trace result
             sdntrace.trigger_trace_listener(json);
         }
@@ -254,9 +324,6 @@ var SDNTrace = function() {
     this.trigger_trace_listener = function(trace_id) {
         sdntrace.last_trace_id = trace_id;
 
-        // Stopping any ongoing trace.
-        sdntrace.trace_stop();
-
         // Clearing the trace panel
         $('#trace-result-content').html("");
         $('#trace_panel_info_collapse').collapse("hide");
@@ -266,14 +333,19 @@ var SDNTrace = function() {
     }
 
     this.trace_stop = function() {
+        console.log('TRACE STOP');
         _thread_trace_listener = "";
         _trace_timer_counter = 0;
 
         clearTimeout(_thread_trace_listener);
     }
 
+    var debug_trace_trigger_counter = 10;
+    var debug_timeout_trace_trigger_counter = 0;
+
     this.call_trace_listener = function(trace_id) {
 
+        var flag_trace_trigger_again = true;
         var html_render = function(jsonObj) {
             /**
             * Render trace result html info.
@@ -294,19 +366,45 @@ var SDNTrace = function() {
             for (var i = 0, len = jsonObj.result.length; i < len; i++) {
                 html_content += "<tr data-type="+ jsonObj.result[i].type +">";
                 html_content += "<td>" + (i+1) + "</td>";
-                if (jsonObj.result[i].type == "starting") {
+                if (jsonObj.result[i].type == REST_TRACE_TYPE.STARTING) {
                     html_content += "<td>" + jsonObj.result[i].dpid + "</td>";
                     html_content += "<td>" + jsonObj.result[i].port + "</td>";
                     html_content += "<td>" + "</td>";
-                } else if (jsonObj.result[i].type == "trace") {
+                } else if (jsonObj.result[i].type == REST_TRACE_TYPE.TRACE) {
                     html_content += "<td>" + jsonObj.result[i].dpid + "</td>";
                     html_content += "<td>" + jsonObj.result[i].port + "</td>";
                     html_content += "<td>" + jsonObj.result[i].time + "</td>";
-                } else if (jsonObj.result[i].type = "last") {
-                    html_content += "<td></td>";
-                    html_content += "<td></td>";
-                    html_content += "<td>" + jsonObj.result[i].time + "</td>";
-                } else if (jsonObj.result[i].type = "error") {
+                } else if (jsonObj.result[i].type == REST_TRACE_TYPE.INTERTRACE) {
+                    html_content += "<td colspan='3'><strong>Interdomain: " + jsonObj.result[i].domain + "</strong></td>";
+                } else if (jsonObj.result[i].type == REST_TRACE_TYPE.LAST) {
+                    // FLAG to stop the trigger loop
+                    flag_trace_trigger_again = false;
+
+                    html_content += "<td colspan='3'>";
+                    if (jsonObj.result[i].reason == REST_TRACE_REASON.ERROR) {
+                        html_content += "<span class='trace_result_item_error'>Error: ";
+                        if (jsonObj.result[i].msg) {
+                            html_content += jsonObj.result[i].msg;
+                        }
+                        html_content += "</span>"
+                    } else if (jsonObj.result[i].reason == REST_TRACE_REASON.DONE) {
+                        html_content += "<span class='trace_result_item_done'>Trace completed.";
+                        if (jsonObj.result[i].msg) {
+                            html_content += jsonObj.result[i].msg;
+                        }
+                        html_content += "</span>"
+                    } else if (jsonObj.result[i].reason == REST_TRACE_REASON.LOOP) {
+                        html_content += "<span class='trace_result_item_loop'>Trace completed with loop.";
+                        if (jsonObj.result[i].msg) {
+                            html_content += jsonObj.result[i].msg;
+                        }
+                        html_content += "</span>"
+                    }
+                    html_content += "</td>";
+                } else if (jsonObj.result[i].type == REST_TRACE_TYPE.ERROR) {
+                    // FLAG to stop the trigger loop
+                    flag_trace_trigger_again = false;
+
                     html_content += "<td colspan='3'>" + jsonObj.result[i].message + "</td>";
                 }
                 html_content += "</tr>";
@@ -328,8 +426,11 @@ var SDNTrace = function() {
             if (jsonObj.result.length > 0) {
                 for (var i = 0, len = jsonObj.result.length; i < len; i++) {
                     var result_item = jsonObj.result[i];
-                    console.log(result_item);
 
+                    if (result_item.hasOwnProperty("domain")) {
+                        var css_selector = "#node-" + result_item.dpid;
+                        $(css_selector).addClass("node-trace-active");
+                    }
                     if (result_item.hasOwnProperty("dpid")) {
                         var css_selector = "#node-" + result_item.dpid;
                         $(css_selector).addClass("node-trace-active");
@@ -341,8 +442,9 @@ var SDNTrace = function() {
                 }
 
                 var last_result_item = jsonObj.result[jsonObj.result.length - 1];
-                if (last_result_item.type == "last") {
+                if (last_result_item.type == REST_TRACE_TYPE.LAST) {
                     // stop the interval loop
+                    console.log('TRACE stop by receiving last item;')
                     sdntrace.trace_stop();
 
                     // TODO: show messages
@@ -357,13 +459,41 @@ var SDNTrace = function() {
 
         // Timeout. Stopping the trace.
         if(_trace_timer_counter > _trace_timer_max) {
+            // FLAG to stop the trigger loop
+            flag_trace_trigger_again = false;
+
+            console.log('TRACE stop by timeout;')
             sdntrace.trace_stop();
             return;
         }
 
         // AJAX call
         if (DEBUG) {
-            json = MOCK_JSON_TRACE_RESULT;
+
+            console.log("debug_trace_trigger_counter:" + debug_trace_trigger_counter);
+
+            json = "";
+            debug_trace_trigger_counter = debug_trace_trigger_counter + 1;
+            if (debug_trace_trigger_counter == 1) { json = MOCK_JSON_TRACE_RESULT_PART1; }
+            else if (debug_trace_trigger_counter == 2) { json = MOCK_JSON_TRACE_RESULT_PART2; }
+            else if (debug_trace_trigger_counter == 3) { json = MOCK_JSON_TRACE_RESULT_PART3; }
+            else if (debug_trace_trigger_counter == 4) {
+                 debug_timeout_trace_trigger_counter = debug_timeout_trace_trigger_counter + 1;
+
+                 if (debug_timeout_trace_trigger_counter == 1) { json = MOCK_JSON_TRACE_RESULT_PART4; }
+                 else if (debug_timeout_trace_trigger_counter == 2) { json = MOCK_JSON_TRACE_RESULT_PART4_ERROR; }
+                 else if (debug_timeout_trace_trigger_counter == 3) { json = MOCK_JSON_TRACE_RESULT_PART4_LOOP; }
+                 else {
+                    json = MOCK_JSON_TRACE_RESULT_PART4;
+                    debug_timeout_trace_trigger_counter = 0;
+                 }
+            } else if (debug_trace_trigger_counter == 5) {
+                debug_trace_trigger_counter = 0;
+                json = MOCK_JSON_TRACE_RESULT;
+            } else if (debug_trace_trigger_counter > 5) {
+                json = MOCK_JSON_TRACE_RESULT_INTERDOMAIN;
+            }
+
             var jsonobj = $.parseJSON(json);
             ajax_done(jsonobj);
 
@@ -383,7 +513,12 @@ var SDNTrace = function() {
             });
         }
 
-        _thread_trace_listener = setTimeout(this.call_trace_listener, _trace_timer_trigger_call);
+        if (flag_trace_trigger_again) {
+            console.log('START SET TIMEOUT.');
+            console.log(sdntrace.call_trace_listener);
+            console.log(_trace_timer_trigger_call);
+            _thread_trace_listener = setTimeout(sdntrace.call_trace_listener, _trace_timer_trigger_call);
+        }
     }
 
     /**

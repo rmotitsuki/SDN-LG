@@ -41,7 +41,7 @@ body {
 }
 .modal-dialog {
   width: 90%;
-  height: 700px;
+  height: auto;
 }
 .modal-body {
   overflow-y: auto;

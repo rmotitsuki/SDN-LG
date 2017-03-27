@@ -62,7 +62,7 @@ var SIZE = {'switch': 16,
             'port': 8,
             'host': 10};
 
-var DISTANCE = {'switch': 15 * SIZE['switch'],
+var DISTANCE = {'switch': 10 * SIZE['switch'],
                 'port': SIZE['switch'] + 16,
                 'host': 1 * SIZE['port']};
 
@@ -192,6 +192,7 @@ var ForceGraph = function(p_selector, p_data) {
         return this;
     }
 
+    var collisionForce = d3.forceCollide(12).strength(10).iterations(20);
     var force = d3.forceSimulation()
         .force("link",
             d3.forceLink()
@@ -204,10 +205,9 @@ var ForceGraph = function(p_selector, p_data) {
                 })
                 .strength(0.1)
         )
-        .force("charge", d3.forceManyBody().strength(-100))
-        .force("center", d3.forceCenter(width / 2, height / 2))
-    .alphaTarget(0.05)
-    .on("tick", ticked);
+        .force("collisionForce",collisionForce)
+        .force("charge", d3.forceManyBody())
+        .on("tick", ticked);
 
     // OBS: SVG Document order is important!
     // Draw order:
@@ -565,8 +565,11 @@ var ForceGraph = function(p_selector, p_data) {
         force.force("link").links(_data.links, function(d) { return d.source.id + "-" + d.target.id; });
         force.nodes(_data.nodes, function(d) { return d.id;});
 
-        // restart force animation
         force.restart();
+        // restart force animation
+        for (var i = 100; i > 0; --i) force.tick();
+
+
     }
 }
 
@@ -633,6 +636,8 @@ var SDNTopology = function() {
     this.switches = [];
     // topology link list
     this.topology = [];
+    // topology domains
+//    this.domains = []
 
     /**
      * Call ajax to load the switch list.
@@ -659,7 +664,48 @@ var SDNTopology = function() {
             ajax_done(jsonobj);
         } else {
             var jqxhr = $.ajax({
-                url:"/switches",
+                url:"/sdnlg/switches",
+                dataType: 'json',
+                crossdomain:true,
+            }).done(function(json) {
+                ajax_done(json);
+            })
+            .fail(function() {
+                console.log( "call_get_switches ajax error" );
+            })
+            .always(function() {
+                console.log( "call_get_switches ajax complete" );
+            });
+        }
+    }
+
+    this.call_sdntrace_get_switches = function() {
+        var ajax_done = function(jsonObj) {
+
+            for (var x = 0; x < jsonObj.length; x++) {
+                // storing switch values
+                var switch_obj = new Switch(jsonObj[x]);
+
+//                switch_obj.n_ports = jsonObj[x].n_ports;
+//                switch_obj.n_tables = jsonObj[x].n_tables;
+                sdntopology.switches.push(switch_obj);
+            }
+
+            // sort
+            sdntopology.switches = sdntopology.switches.sort();
+            // deduplication
+            sdntopology.switches = array_unique_fast(sdntopology.switches);
+        }
+
+        // AJAX call
+        if (DEBUG) {
+            json = MOCK_JSON_SWITCHES;
+            var jsonobj = $.parseJSON(json);
+
+            ajax_done(jsonobj);
+        } else {
+            var jqxhr = $.ajax({
+                url:"/sdntrace/switches",
                 dataType: 'json',
                 crossdomain:true,
             }).done(function(json) {
@@ -749,7 +795,95 @@ var SDNTopology = function() {
             ajax_done(jsonobj);
         } else {
             var jqxhr = $.ajax({
-                url: "/links",
+                url: "/sdnlg/links",
+                dataType: 'json',
+            }).done(function(json) {
+                ajax_done(json);
+            })
+            .fail(function() {
+                console.log( "call_get_topology ajax error" );
+            })
+            .always(function() {
+                console.log( "call_get_topology ajax complete" );
+            });
+        }
+    }
+
+    /**
+     * Call ajax to load the switch topology.
+     */
+    this.call_sdntrace_get_topology = function() {
+        // hiding topology graphic panel
+
+        $('#topology__canvas').hide();
+
+        var ajax_done = function(json) {
+            var jsonObj;
+            jsonObj= json;
+
+            // verify if the json is not a '{}' response
+            if (!jQuery.isEmptyObject(jsonObj)) {
+
+
+                $.each( jsonObj, function( key, val ) {
+                    sdntrace.topology.push({'key': key, 'val':val});
+                });
+
+                sdntrace.topology = sdntrace.topology.sort(function(a, b) {
+                    return a['key'].localeCompare(b['key']);
+                });
+                sdntrace.render_html_topology();
+
+                sdntrace.call_get_switch_colors();
+            }
+
+            // verify if the json is not a '{}' response
+            if (!jQuery.isEmptyObject(jsonObj)) {
+                $('#topology__elements').show();
+                $.each( jsonObj, function( key, link ) {
+                    var linkObj = new Link();
+                    linkObj.speed = link.speed;
+
+                    // creating switch
+                    linkObj.node1 = new Switch(link.node1.dpid);
+                    linkObj.node2 = new Switch(link.node2.dpid);
+
+                    // creating switch ports
+                    var node1_port = new Port(link.node1.dpid +'_'+ link.node1.port.port_no, link.node1.port.port_no, link.node1.port.name);
+                    linkObj.node1.ports = [];
+                    linkObj.node1.ports.push(node1_port);
+
+                    // creating switch ports
+                    var node2_port = new Port(link.node2.dpid +'_'+ link.node2.port.port_no, link.node2.port.port_no, link.node2.port.name);
+                    linkObj.node2.ports = [];
+                    linkObj.node2.ports.push(node2_port);
+
+
+                    linkObj.label1 = link.node1.port.name;
+                    linkObj.label2 = link.node2.port.name;
+
+                    linkObj.label_num1 = link.node1.port.port_no;
+                    linkObj.label_num2 = link.node2.port.port_no;
+
+                    sdntopology.add_topology(linkObj);
+                });
+
+                // render HTML data
+                sdntopology.render_html_topology();
+
+                // render D3 force
+                d3lib.render_topology();
+            }
+        }
+
+        // AJAX call
+        if (DEBUG) {
+            json = MOCK_JSON_TOPOLOGY;
+            var jsonobj = $.parseJSON(json);
+            ajax_done(jsonobj);
+        } else {
+            var jqxhr = $.ajax({
+                url: "/sdntrace/switches/topology",
                 dataType: 'json',
             }).done(function(json) {
                 ajax_done(json);
@@ -792,7 +926,7 @@ var SDNTopology = function() {
             ajax_done(jsonobj);
         } else {
             var jqxhr = $.ajax({
-                url: "/switches/" + dpid + "/ports",
+                url: "/sdnlg/switches/" + dpid + "/ports",
                 dataType: 'json',
             }).done(function(json) {
                 ajax_done(json);
@@ -1030,7 +1164,7 @@ var Switch = function(switch_id) {
 
     this.get_d3js_data = function() {
         node_id = this.id;
-        node_obj = {id: node_id, dpid: node_id, name: node_id, data:this, label:this.get_node_name(), physics:true, mass:2, stroke_width:1, type:"switch"};
+        node_obj = {id: node_id, dpid: node_id, name: node_id, data:this, label:this.get_node_name(), physics:true, mass:2, stroke_width:1, type:"switch", x:300, y:300};
         // Trace coloring
         if (typeof(node_obj.color)==='undefined') {
             node_obj.background_color = sdncolor.NODE_COLOR[node_obj.type];
@@ -1062,6 +1196,23 @@ var Port = function(port_id, number, label) {
 // Return switch port id if the class is used with strings
 Port.prototype.toString = function(){ return this.id; };
 
+/**
+ * Domain representation.
+ */
+var Domain = function(domain_id, label) {
+    this.id = port_id;
+    this.label = label;
+
+    this.get_d3js_data = function() {
+        node_obj = {id: this.id, name: null, data:this, label:this.label, physics:true, mass:2, stroke_width:1, type:"domain"};
+        node_obj.background_color = sdncolor.NODE_COLOR[node_obj.type];
+
+        return node_obj;
+    }
+
+}
+// Return switch port id if the class is used with strings
+Port.prototype.toString = function(){ return this.id; };
 
 var D3JS = function() {
     this.nodes = null;
@@ -1243,15 +1394,46 @@ var D3JS = function() {
     }
 
     var fake_last_node = null;
+//
+//    this.add_new_node_domain = function(id=null, label="") {
+//
+//        var data = forcegraph.data();
+//
+//        // fake id TODO: test new node
+//        var fake_id = Math.floor((Math.random() * 100000000) + 1);;
+//        var fake_domain_obj = new Domain(fake_id);
+//        sdntopology.domains.push(fake_domain_obj);
+//
+//        // create an array with nodes
+//        this._create_network_nodes(with_colors, with_trace, true);
+//        data.nodes = this.nodes;
+//
+//        // TODO: fake link
+//        if (fake_last_node == null) {
+//            var fake_link = {node1: "0000000000000001" , node2:fake_dpid, label1:"", label2:"", speed:"1"}
+//            sdntopology.topology.push(fake_link);
+//        } else {
+//            var fake_link = {node1: fake_last_node , node2:fake_dpid, label1:"", label2:"", speed:"1"}
+//            sdntopology.topology.push(fake_link);
+//        }
+//        fake_last_node = fake_dpid;
+//
+//        // create an array with edges
+//        this._create_network_edges(with_colors, with_trace, true);
+//        data.links = this.edges;
+//
+//        // Link attribute to store json data
+//        data.edges_data = this.edges;
+//
+//        forcegraph.draw();
+//        // Draw the graph for the first time
+//    }
 
-    this.add_new_node = function() {
+    this.add_new_node = function(dpid=null, label="") {
         with_colors = typeof with_colors !== 'undefined' ? with_colors : true;
         with_trace = typeof with_trace !== 'undefined' ? with_trace : true;
 
         var data = forcegraph.data();
-
-        // create a network
-        var selector = "#topology__canvas";
 
         // fake id TODO: test new node
         var fake_dpid = Math.floor((Math.random() * 100000000) + 1);;
@@ -1322,8 +1504,10 @@ var _initial_data_load = function() {
 
     // load switches data
     sdntopology.call_get_switches();
+//    sdntopology.call_sdntrace_get_switches();
     // load topology data
     sdntopology.call_get_topology();
+//    sdntopology.call_sdntrace_get_topology();
 }
 
 /* Initial load */
@@ -1339,8 +1523,8 @@ $(function() {
         } else {
             $('.target-label').show();
             $('.source-label').show();
-            d3.selectAll(".node_port").style("display", "none");
-            d3.selectAll(".text_port").style("display", "none");
+            d3.selectAll(".node_port").style("display", "");
+            d3.selectAll(".text_port").style("display", "");
         }
     });
     // Topology speed link labels handler

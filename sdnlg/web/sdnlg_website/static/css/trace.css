@@ -9,3 +9,13 @@
     stroke: rgb(89, 179, 42) !important;
     stroke-width: 6px !important;
 }
+
+.trace_result_item_error {
+    color: red;
+}
+.trace_result_item_done {
+    color: green;
+}
+.trace_result_item_loop {
+    color: darkorange;
+}
