@@ -98,9 +98,20 @@ var SDNTrace = function() {
         forcegraph.exit_highlight();
 
         // clear d3 graph trace classes
-        $("circle").removeClass("node-trace-active");
+        $("path").removeClass("node-trace-active");
         $("line").removeClass("link-trace-active");
+        $("path").each(function() {
+            if ($(this).attr("data-nodeid")) {
+            }
+        });
 
+        // remove d3 nodes and links related to these nodes
+        $('path').each(function() {
+            if($(this).attr('data-nodeid')) {
+                _id = $(this).attr('data-nodeid');
+                d3lib.removeNode(_id);
+            }
+        });
         // close modal trace form
         sdn_trace_form_dialog.dialog( "close" );
     }
@@ -115,7 +126,6 @@ var SDNTrace = function() {
 
         var ajax_done = function(json) {
             // Stopping any ongoing trace.
-            console.log('TRACE start new trace.');
             sdntrace.trace_stop();
 
             // Trigger AJAX to retrieve the trace result
@@ -333,7 +343,6 @@ var SDNTrace = function() {
     }
 
     this.trace_stop = function() {
-        console.log('TRACE STOP');
         _thread_trace_listener = "";
         _trace_timer_counter = 0;
 
@@ -416,39 +425,67 @@ var SDNTrace = function() {
             $('#trace_panel_info_collapse').collapse("show");
         }
 
-        var ajax_done = function(jsonObj) {
-            if (_thread_trace_listener == "") {
-                return;
-            }
-            console.log("call_trace_listener jsonObj");
-            console.log(jsonObj);
+        var _add_new_html_node = function(_id) {
+            var html_selector = "#node-" + _id;
+            $(html_selector).addClass("new-node node-trace-active");
+            $(html_selector).attr("data-nodeid", _id);
+        }
 
+        var _add_new_html_link = function(_id_from, _id_to) {
+            var html_selector = "#link-" + _id_from +"-"+ _id_to;
+            $(html_selector).addClass("new-link link-trace-active");
+            $(html_selector).attr("data-linkid", _id_from +"-"+ _id_to);
+        }
+
+        var ajax_done = function(jsonObj) {
             if (jsonObj.result.length > 0) {
+                var flag_has_domain = false;
+                var last_node_id
                 for (var i = 0, len = jsonObj.result.length; i < len; i++) {
                     var result_item = jsonObj.result[i];
+                    var _id = null;
 
                     if (result_item.hasOwnProperty("domain")) {
-                        var css_selector = "#node-" + result_item.dpid;
-                        $(css_selector).addClass("node-trace-active");
+                        // Add new domain node
+                        _id = result_item.domain.replace(" ", "_");
+                        d3lib.add_new_node_domain(_id);
+                        _add_new_html_node(_id);
+
+                        // Add new link
+                        d3lib.add_new_link(last_node_id, _id);
+                        _add_new_html_link(last_node_id, _id);
+
+                        flag_has_domain = true;
                     }
                     if (result_item.hasOwnProperty("dpid")) {
-                        var css_selector = "#node-" + result_item.dpid;
-                        $(css_selector).addClass("node-trace-active");
+                        _id = result_item.dpid;
+                        if (flag_has_domain) {
+                            // Add new switch node related to new domain
+                            d3lib.add_new_node(_id);
+                            _add_new_html_node(_id);
+
+                            // Add new link
+                            d3lib.add_new_link(last_node_id, _id);
+                            _add_new_html_link(last_node_id, _id);
+                        }
+                        $("#node-" + _id).addClass("node-trace-active");
+
                     }
                     if (i > 0 && jsonObj.result[i-1].hasOwnProperty("dpid") && jsonObj.result[i].hasOwnProperty("dpid")) {
+                        // Add new link between nodes
                         var css_selector = "#link-" + jsonObj.result[i-1].dpid +"-"+ jsonObj.result[i].dpid;
-                        $(css_selector).addClass("link-trace-active");
+                        $(css_selector).addClass("new-link link-trace-active");
                     }
+
+                    last_node_id = _id;
                 }
 
                 var last_result_item = jsonObj.result[jsonObj.result.length - 1];
                 if (last_result_item.type == REST_TRACE_TYPE.LAST) {
                     // stop the interval loop
-                    console.log('TRACE stop by receiving last item;')
                     sdntrace.trace_stop();
 
-                    // TODO: show messages
-                    console.log("trace last item type OK. Total time:" + jsonObj.total_time);
+                    flag_trace_trigger_again = false;
                 }
             }
             html_render(jsonObj);
@@ -462,15 +499,11 @@ var SDNTrace = function() {
             // FLAG to stop the trigger loop
             flag_trace_trigger_again = false;
 
-            console.log('TRACE stop by timeout;')
             sdntrace.trace_stop();
-            return;
         }
 
         // AJAX call
         if (DEBUG) {
-
-            console.log("debug_trace_trigger_counter:" + debug_trace_trigger_counter);
 
             json = "";
             debug_trace_trigger_counter = debug_trace_trigger_counter + 1;
@@ -492,6 +525,8 @@ var SDNTrace = function() {
                 json = MOCK_JSON_TRACE_RESULT;
             } else if (debug_trace_trigger_counter > 5) {
                 json = MOCK_JSON_TRACE_RESULT_INTERDOMAIN;
+                debug_trace_trigger_counter = 0;
+                console.log('interdomain json');
             }
 
             var jsonobj = $.parseJSON(json);
@@ -514,9 +549,6 @@ var SDNTrace = function() {
         }
 
         if (flag_trace_trigger_again) {
-            console.log('START SET TIMEOUT.');
-            console.log(sdntrace.call_trace_listener);
-            console.log(_trace_timer_trigger_call);
             _thread_trace_listener = setTimeout(sdntrace.call_trace_listener, _trace_timer_trigger_call);
         }
     }
@@ -537,6 +569,7 @@ var SDNTrace = function() {
 
             // render D3 force
             d3lib.render_topology();
+            $('#topology__canvas').show();
 
         } else {
             var jqxhr = $.ajax({

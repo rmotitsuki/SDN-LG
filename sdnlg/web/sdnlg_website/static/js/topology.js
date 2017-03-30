@@ -59,8 +59,15 @@ var SPEED_1GB = 1000000000;
 
 
 var SIZE = {'switch': 16,
+            'domain': 16,
             'port': 8,
             'host': 10};
+
+var SIZE_PATH = {'switch': 700,
+            'domain': 700,
+            'port': 80,
+            'host': 100};
+
 
 var DISTANCE = {'switch': 10 * SIZE['switch'],
                 'port': SIZE['switch'] + 16,
@@ -81,7 +88,7 @@ var ForceGraph = function(p_selector, p_data) {
         return [
             {
                 title: function(d) {
-                    var sw = sdntopology.get_switch_by_dpid(d.name);
+                    var sw = sdntopology.get_node_by_id(d.name);
                     return sw.id;
                 },
                 disabled: true
@@ -91,7 +98,7 @@ var ForceGraph = function(p_selector, p_data) {
             },
             {
                 title: function(d) {
-                    var sw = sdntopology.get_switch_by_dpid(d.name);
+                    var sw = sdntopology.get_node_by_id(d.name);
                     return 'Name: ' + sw.get_name();
                 },
                 disabled: true
@@ -147,7 +154,7 @@ var ForceGraph = function(p_selector, p_data) {
     }
 
 	function isConnected(a, b) {
-        return _linkedByIndex.has(a.dpid + "-" + b.dpid) || _linkedByIndex.has(b.dpid + "-" + a.dpid) || a.dpid == b.dpid;
+        return _linkedByIndex.has(a.id + "-" + b.id) || _linkedByIndex.has(b.id + "-" + a.id) || a.id == b.id;
     }
 
     // zoom behavior
@@ -224,6 +231,11 @@ var ForceGraph = function(p_selector, p_data) {
         .append("g")
         .attr("class", "nodes")
         .selectAll("circle")
+    // domain node
+    var rect = container
+        .append("g")
+        .attr("class", "domains")
+        .selectAll("rect")
     // draw switch label
     var text = container.append("g").selectAll("text");
     // draw link label
@@ -235,12 +247,31 @@ var ForceGraph = function(p_selector, p_data) {
         if (!d3.event.active) force.alphaTarget(0.3).restart()
         d.fx = d.x;
         d.fy = d.y;
+
+        if (d.type == 'domain') {
+            var xx = d.fx;
+            var yy = d.fy;
+
+            d3.select(this)
+                .attr("transform", function(d) {
+                  return "translate(" + xx + ", " + yy + ")";
+                });
+        }
     }
 
     var _nodeDragged = function (d) {
         if (d.type == 'port') { return " node_port"; }
         d.fx = d3.event.x;
         d.fy = d3.event.y;
+
+        if (d.type == 'domain') {
+            var xx = d.fx;
+            var yy = d.fy;
+            d3.select(this)
+                .attr("transform", function(d) {
+                  return "translate(" + xx + ", " + yy + ")";
+                });
+        }
     }
 
     var _nodeDragended = function (d) {
@@ -408,7 +439,8 @@ var ForceGraph = function(p_selector, p_data) {
     function ticked(d) {
 
         d3.selectAll("line").attr("d", linkArc);
-        d3.selectAll("circle").attr("transform", transformNode);
+        d3.selectAll(".node").attr("transform", transformNode);
+        d3.selectAll(".domain").attr("transform", transform);
         d3.selectAll(".node_text").attr("transform", transformLabel);
         d3.selectAll(".speed-label").attr("transform", transformLinkLabel);
     }
@@ -473,19 +505,53 @@ var ForceGraph = function(p_selector, p_data) {
                     })
                     .merge(path);
 
+        // domain draw
+//        rect = rect.data(_data.rects, function(d) { return d.id;});
+//        rect.exit().remove();
+//        rect = rect
+//            .enter()
+//                .append("path")
+//                .attr("class", "node")
+//                  .attr("d", d3.symbol()
+//                    .type(function(d) {
+//                      //return (d.shapetype)
+//                      return d3.symbolCross;
+//                    }).size("4096"))
+//
+//
+//                .attr("id", function(d) { return "domain-" + d.id; })
+//                .attr("x", 0)
+//                .attr("y", 0)
+//                .attr("width", function(d) { return SIZE[d.type]||nominal_base_node_size; })
+//                .attr("height", function(d) { return SIZE[d.type]||nominal_base_node_size; })
+//                .attr("fill", function(d) { return d.background_color; })
+//                .attr("class", function(d) { return "domain"; })
+//                .call(d3.drag()
+//                    .on("start", _nodeDragstarted)
+//                    .on("drag", _nodeDragged)
+//                    .on("end", _nodeDragended))
+//                .merge(rect);
+
         // switch draw
         node = node.data(_data.nodes, function(d) { return d.id;});
         node.exit().remove();
         node = node
             .enter()
-                .append("circle")
+//                .append("circle")
+                .append("path")
+                .attr("d", d3.symbol()
+                    .type(function(d) {
+                        if (d.type == 'domain') { return d3.symbolCross; }
+                        return d3.symbolCircle;
+
+                    }).size(function(d) { return (SIZE_PATH[d.type]); }))
                 .attr("id", function(d) { return "node-" + d.id; })
                 .attr("r", function(d) { return SIZE[d.type]||nominal_base_node_size; })
                 .attr("fill", function(d) { return d.background_color; })
                 .style(tocolor, function(d) { return d.background_color; })
                 .attr("class", function(d) {
-                    if (d.type == 'port') { return " node_port"; }
-                    return "";
+                    if (d.type == 'port') { return " node node_port"; }
+                    return "node";
                 })
                 .style("display", function(d) {
                     if (d.type == 'port') { return "none"; }
@@ -567,7 +633,7 @@ var ForceGraph = function(p_selector, p_data) {
 
         force.restart();
         // restart force animation
-        for (var i = 100; i > 0; --i) force.tick();
+        for (var i = 10; i > 0; --i) force.tick();
 
 
     }
@@ -637,7 +703,7 @@ var SDNTopology = function() {
     // topology link list
     this.topology = [];
     // topology domains
-//    this.domains = []
+    this.domains = []
 
     /**
      * Call ajax to load the switch list.
@@ -720,9 +786,14 @@ var SDNTopology = function() {
         }
     }
 
-    this.get_switch_by_dpid = function(dpid) {
+    this.get_node_by_id = function(dpid) {
         // add to topology list to render the html
         for (var key in sdntopology.switches) {
+            if (sdntopology.switches[key].id == dpid) {
+                return sdntopology.switches[key];
+            }
+        }
+        for (var key in sdntopology.domains) {
             if (sdntopology.switches[key].id == dpid) {
                 return sdntopology.switches[key];
             }
@@ -785,6 +856,7 @@ var SDNTopology = function() {
 
                 // render D3 force
                 d3lib.render_topology();
+                $('#topology__canvas').show();
             }
         }
 
@@ -873,6 +945,7 @@ var SDNTopology = function() {
 
                 // render D3 force
                 d3lib.render_topology();
+                $('#topology__canvas').show();
             }
         }
 
@@ -1200,7 +1273,7 @@ Port.prototype.toString = function(){ return this.id; };
  * Domain representation.
  */
 var Domain = function(domain_id, label) {
-    this.id = port_id;
+    this.id = domain_id;
     this.label = label;
 
     this.get_d3js_data = function() {
@@ -1208,6 +1281,10 @@ var Domain = function(domain_id, label) {
         node_obj.background_color = sdncolor.NODE_COLOR[node_obj.type];
 
         return node_obj;
+    }
+
+    this.get_name = function() {
+        return this.label;
     }
 
 }
@@ -1220,8 +1297,24 @@ var D3JS = function() {
 
     this.findNode = function(id) {
         for (var k in this.nodes){
-            if (this.nodes.hasOwnProperty(k) && this.nodes[k].id == id) {
+            if (this.nodes.hasOwnProperty(k) && this.nodes[k] && this.nodes[k].id == id) {
                  return this.nodes[k];
+            }
+        }
+        return null;
+    }
+    this.removeNode = function(id) {
+        // Delete the node from the array
+        for (var k in this.nodes){
+            if (this.nodes.hasOwnProperty(k) && this.nodes[k] && this.nodes[k].id == id) {
+                 this.nodes.splice(k, 1);
+            }
+        }
+        // Delete the edges related to the deleted node
+        for (var k in this.edges){
+            if (this.edges.hasOwnProperty(k) && this.edges[k]) {
+                if (this.edges[k].source.id == id || this.edges[k].target.id == id)
+                 this.edges.splice(k, 1);
             }
         }
         return null;
@@ -1233,12 +1326,7 @@ var D3JS = function() {
      * You must load the sdntopology switch and topology data before trying to render the topology.
      */
     this.render_topology = function() {
-        $('#topology__canvas').show();
         this._render_network(false, false);
-    }
-    this.render_topology_colors = function() {
-        $('#topology__canvas').show();
-        this._render_network(true, false);
     }
 
     /**
@@ -1261,6 +1349,19 @@ var D3JS = function() {
                 }
             }
 
+            nodesArray.push(node_obj);
+        }
+        for (x = 0; x < sdntopology.domains.length; x++) {
+            // positioning in spiral mode to help the physics animation and prevent crossing lines
+            node_obj = sdntopology.domains[x].get_d3js_data()
+
+            if (update_current) {
+                for (y = 0; y < this.nodes.length; y++) {
+                    if (this.nodes[y].id == node_obj.id) {
+                        node_obj = this.nodes[y];
+                    }
+                }
+            }
             nodesArray.push(node_obj);
         }
         this.nodes = nodesArray;
@@ -1304,16 +1405,17 @@ var D3JS = function() {
 
             speed = sdntopology.topology[x].speed;
 
-            source = this.findNode(node_from_id) || this.nodes.push({dpid:node_from_id, name: node_from_id});
-            target = this.findNode(node_to_id) || this.nodes.push({dpid:node_to_id, name: node_to_id});
+            source = this.findNode(node_from_id) || this.nodes.push({id:node_from_id, dpid:node_from_id, name: node_from_id});
+            target = this.findNode(node_to_id) || this.nodes.push({id:node_to_id, dpid:node_to_id, name: node_to_id});
 
             source_label = {name: label_from, num: label_num_from};
             target_label = {name: label_to, num: label_num_to};
 
-            id = source.dpid + "-" + target.dpid;
+            id = source.id + "-" + target.id;
 
             edgeObj = {id:id, name:x, source: source, target: target, source_label:source_label, target_label:target_label, speed:speed, arrows:'to', type: "suit"};
             edgeObj.color = sdncolor.LINK_COLOR['switch'];
+
 
             // Verify trace to change edge colors and labels.
             has_edge_path_obj = this._has_edge_path(edgesArray, edgeObj);
@@ -1366,23 +1468,20 @@ var D3JS = function() {
 
         // create a network
         var selector = "#topology__canvas";
-        var data = {
-            nodes: [],
-            links: []
-        };
 
         this.resetAllNodes();
 
         // create an array with nodes
         this._create_network_nodes(with_colors, with_trace);
-        data.nodes = this.nodes;
 
         // create an array with edges
         this._create_network_edges(with_colors, with_trace);
-        data.links = this.edges;
 
-        // Link attribute to store json data
-        data.edges_data = this.edges;
+        var data = {
+            nodes: this.nodes,
+            links: this.edges,
+            edges_data: this.edges
+        };
 
         // creating Force Graph nodes
         // Set the new data
@@ -1393,89 +1492,65 @@ var D3JS = function() {
         // Draw the graph for the first time
     }
 
-    var fake_last_node = null;
-//
-//    this.add_new_node_domain = function(id=null, label="") {
-//
-//        var data = forcegraph.data();
-//
-//        // fake id TODO: test new node
-//        var fake_id = Math.floor((Math.random() * 100000000) + 1);;
-//        var fake_domain_obj = new Domain(fake_id);
-//        sdntopology.domains.push(fake_domain_obj);
-//
-//        // create an array with nodes
-//        this._create_network_nodes(with_colors, with_trace, true);
-//        data.nodes = this.nodes;
-//
-//        // TODO: fake link
-//        if (fake_last_node == null) {
-//            var fake_link = {node1: "0000000000000001" , node2:fake_dpid, label1:"", label2:"", speed:"1"}
-//            sdntopology.topology.push(fake_link);
-//        } else {
-//            var fake_link = {node1: fake_last_node , node2:fake_dpid, label1:"", label2:"", speed:"1"}
-//            sdntopology.topology.push(fake_link);
-//        }
-//        fake_last_node = fake_dpid;
-//
-//        // create an array with edges
-//        this._create_network_edges(with_colors, with_trace, true);
-//        data.links = this.edges;
-//
-//        // Link attribute to store json data
-//        data.edges_data = this.edges;
-//
-//        forcegraph.draw();
-//        // Draw the graph for the first time
-//    }
+    this.add_new_node_domain = function(id=null, label="") {
+        for (y = 0; y < this.nodes.length; y++) {
+            if(this.nodes[y].id == id) {
+                console.log('NODE ALREADY HERE!!!! ' + id)
+                // do nothing
+                return;
+            }
+        }
+
+        var _id = "";
+        if (id) {
+            _id = id.replace(" ", "_");
+        }
+        var domain_obj = new Domain(_id);
+        sdntopology.domains.push(domain_obj);
+
+        // create an array with nodes
+        this._create_network_nodes(false, false, true);
+
+        var data = forcegraph.data();
+        data.nodes = this.nodes;
+
+        // Draw the d3js graph
+        forcegraph.draw();
+    }
+
+    this.add_new_link = function(id_from, id_to, label="") {
+        var _link = {node1: id_from , node2:id_to, label1:label, label2:label, speed:""}
+        sdntopology.topology.push(_link);
+
+        // create an array with edges
+        this._create_network_edges(false, false, true);
+
+        var data = forcegraph.data();
+        data.links = this.edges;
+        data.edges_data = this.edges;
+
+        // Draw the d3js graph
+        forcegraph.draw();
+    }
 
     this.add_new_node = function(dpid=null, label="") {
         with_colors = typeof with_colors !== 'undefined' ? with_colors : true;
         with_trace = typeof with_trace !== 'undefined' ? with_trace : true;
 
-        var data = forcegraph.data();
-
-        // fake id TODO: test new node
-        var fake_dpid = Math.floor((Math.random() * 100000000) + 1);;
-        var fake_switch_obj = new Switch(fake_dpid);
-        sdntopology.switches.push(fake_switch_obj);
+        var _dpid = "";
+        if (dpid) {
+            _dpid = dpid;
+        }
+        var _switch_obj = new Switch(_dpid);
+        sdntopology.switches.push(_switch_obj);
 
         // create an array with nodes
         this._create_network_nodes(with_colors, with_trace, true);
+
+        var data = forcegraph.data();
         data.nodes = this.nodes;
 
-        // TODO: fake link
-        if (fake_last_node == null) {
-            var fake_link = {node1: "0000000000000001" , node2:fake_dpid, label1:"", label2:"", speed:"1"}
-            sdntopology.topology.push(fake_link);
-        } else {
-            var fake_link = {node1: fake_last_node , node2:fake_dpid, label1:"", label2:"", speed:"1"}
-            sdntopology.topology.push(fake_link);
-        }
-        fake_last_node = fake_dpid;
-
-        // create an array with edges
-        this._create_network_edges(with_colors, with_trace, true);
-        data.links = this.edges;
-
-        // Link attribute to store json data
-        data.edges_data = this.edges;
-
-        // creating Force Graph nodes
-        // Set the new data
-        //forcegraph.data(data);
-        // Create the graph object
-        // Having myGraph in the global scope makes it easier to call it from a json function or anywhere in the code (even other js files).
         forcegraph.draw();
-        // Draw the graph for the first time
-    }
-
-    this.trace = function() {
-        //  TODO: test trace. check node and link id and change the stroke, stroke width.
-        // create a clear trace method to reset the colors
-
-
-
     }
 
     this.resetAllNodes = function() {
@@ -1536,11 +1611,18 @@ $(function() {
         }
     });
 
-    // TODO: test adding node to the force graph
-    $('#topology__toolbar__btn__add_node').click(function() {
-        d3lib.add_new_node();
-    });
+//    $('#topology__toolbar__btn__add_node').click(function() {
+//        //d3lib.add_new_node_domain();
+//    });
 
+    // Button to clear trace elements
+    $('#topology__toolbar__btn__clear_trace').click(function() {
+        // clear interface trace elements
+        sdntrace.clear_trace_interface();
+
+        // redraw the graph
+        forcegraph.draw();
+    });
 
 
     // Initialize classes

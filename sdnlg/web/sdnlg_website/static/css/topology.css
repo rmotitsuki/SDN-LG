@@ -66,6 +66,7 @@
 }
 .node {
   cursor: pointer;
+  stroke: black;
 }
 rect.node  {
   fill: skyblue;
