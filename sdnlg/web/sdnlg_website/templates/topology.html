@@ -72,7 +72,23 @@ jQuery(function($) {
                 </div>
                 <div id="canvas_info" class="col_offset_960">
                     <div id="canvas_info_body">
-                        <div id="switch_panel_info" style="display:;" class="panel panel-default">
+                        <div id="domain_panel_info" style="display:none;" class="panel panel-default">
+                          <div class="panel-heading">
+                              <h4 class="panel-title">
+                                <a data-toggle="collapse" href="#domain_panel_info_collapse">Domain</a>
+                              </h4>
+                          </div>
+                          <div id="domain_panel_info_collapse" class="panel-collapse collapse">
+                              <div class="panel-body">
+                                <div>
+                                  <ul>
+                                    <li id="domain_panel_info_name"><span>Name: </span><span id="domain_panel_info_name_value"></span></li>
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                        </div>
+                        <div id="switch_panel_info" style="display:none;" class="panel panel-default">
                           <div class="panel-heading">
                               <h4 class="panel-title">
                                 <a data-toggle="collapse" href="#switch_panel_info_collapse">Switch</a>
@@ -82,9 +98,16 @@ jQuery(function($) {
                               <div class="panel-body">
                                 <div>
                                   <ul>
+                                    <li id="switch_panel_info_domain"><span>Domain: </span><span id="switch_panel_info_domain_value"></span></li>
                                     <li id="switch_panel_info_name"><span>Name: </span><span id="switch_panel_info_name_value"></span></li>
                                     <li id="switch_panel_info_dpid"><span>DPID: </span><span id="switch_panel_info_dpid_value"></span></li>
                                     <li id="switch_panel_info_flows"><span>N. Flows: </span><span id="switch_panel_info_flows_value"></span></li>
+
+                                    <li id="switch_panel_info_tcp_port"><span>TCP Port: </span><span id="switch_panel_info_tcp_port_value"></span></li>
+                                    <li id="switch_panel_info_openflow_version"><span>OF Version: </span><span id="switch_panel_info_openflow_version_value"></span></li>
+                                    <li id="switch_panel_info_switch_vendor"><span>Vendor: </span><span id="switch_panel_info_switch_vendor_value"></span></li>
+                                    <li id="switch_panel_info_ip_address"><span>IP Address: </span><span id="switch_panel_info_ip_address_value"></span></li>
+                                    <li id="switch_panel_info_color"><span>Color: </span><span id="switch_panel_info_color_value"></span></li>
                                   </ul>
                                 </div>
                               </div>
@@ -108,7 +131,7 @@ jQuery(function($) {
                               </div>
                           </div>
                         </div>
-                        <div id="switch_to_panel_info" style="display:;" class="panel panel-default">
+                        <div id="switch_to_panel_info" style="" class="panel panel-default">
                           <div class="panel-heading">
                               <h4 class="panel-title">
                                 <a data-toggle="collapse" href="#switch_to_panel_info_collapse">Switch Connected</a>
@@ -126,15 +149,16 @@ jQuery(function($) {
                               </div>
                           </div>
                         </div>
-                        <div id="trace_panel_info" style="display:;" class="panel panel-default">
+                        <div id="trace_panel_info" style="" class="panel panel-default">
                           <div class="panel-heading">
                               <h4 class="panel-title">
                                 <a data-toggle="collapse" href="#trace_panel_info_collapse">Trace Result</a>
+                                <div class="loading-icon-div"><img src="../static/img/ajax-loader.gif" /></div>
                               </h4>
                           </div>
                           <div id="trace_panel_info_collapse" class="panel-collapse collapse">
                               <div class="panel-body" >
-                                <div class="loading-icon-div"></div>
+
                                 <div id="trace-result-content">
                                 </div>
                               </div>

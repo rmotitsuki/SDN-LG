@@ -325,6 +325,8 @@ var ForceGraph = function(p_selector, p_data) {
         if(d && d.data) {
             $('#port_panel_info').hide();
             $('#switch_to_panel_info').hide();
+            $('#domain_panel_info').hide();
+
             _set_switch_focus_panel_data(d);
         }
 
@@ -348,28 +350,17 @@ var ForceGraph = function(p_selector, p_data) {
             });
     }
 
-
-    /** use with set_switch_focus to set the lateral panel data  */
-    function _set_switch_focus_panel_data(d) {
-        $('#switch_panel_info').show();
-        $('#switch_panel_info_dpid_value').html(d.data.dpid);
-        var name = d.data.get_name();
-        if (name && name.length > 0) {
-            $('#switch_panel_info_name').show();
-            $('#switch_panel_info_name_value').html(name);
-        } else {
-            $('#switch_panel_info_name').hide();
-        }
-        $('#switch_panel_info_flows_value').html(d.data.n_ports);
-    }
-
+    // focus highlight (on node mousedown)
     function set_port_focus(d) {
+        $('#domain_panel_info').hide();
+
         // Set data info panel
         if(d && d.data) {
             $('#port_panel_info').show();
             var name = d.data.label;
             if (name && name.length > 0) {
                 $('#port_panel_info_name').show();
+                $('#port_panel_info_collapse').collapse("show");
                 $('#port_panel_info_name_value').html(name);
             } else {
                 $('#port_panel_info_name').hide();
@@ -378,6 +369,62 @@ var ForceGraph = function(p_selector, p_data) {
         }
     }
 
+    // focus highlight (on node mousedown)
+    function set_domain_focus(d) {
+        // Set data info panel
+        if(d && d.data) {
+            $('#port_panel_info').hide();
+            $('#switch_to_panel_info').hide();
+            _set_domain_focus_panel_data(d);
+            $('#domain_panel_info_collapse').collapse("show");
+        }
+    }
+
+    /** use with set_switch_focus to set the lateral panel data  */
+    function _set_domain_focus_panel_data(d) {
+        $('#domain_panel_info').show();
+        $('#domain_panel_info_collapse').collapse("show");
+        $('#domain_panel_info_dpid_value').html(d.data.domain);
+        var name = d.data.get_name();
+
+        if (name && name.length > 0) {
+            $('#domain_panel_info_name').show();
+            $('#domain_panel_info_name_value').html(name);
+        } else {
+            $('#domain_panel_info_name').hide();
+        }
+    }
+
+
+    /** use with set_switch_focus to set the lateral panel data  */
+    function _set_switch_focus_panel_data(d) {
+        // display panel
+        $('#switch_panel_info').show();
+        // animation to open panel
+        $('#switch_panel_info_collapse').collapse("show");
+        // fill html content
+        $('#switch_panel_info_dpid_value').html(d.data.dpid);
+        var name = d.data.get_name();
+        if (name && name.length > 0) {
+            $('#switch_panel_info_name').show();
+            $('#switch_panel_info_name_value').html(name);
+        } else {
+            $('#switch_panel_info_name').hide();
+        }
+        $('#switch_panel_info_flows_value').html(d.data.number_flows);
+
+        if (d.data.domain) {
+            $('#switch_panel_info_domain').show();
+            $('#switch_panel_info_domain_value').html(d.data.domain);
+        } else {
+            $('#switch_panel_info_domain').hide();
+        }
+        $('#switch_panel_info_tcp_port').html(d.data.tcp_port);
+        $('#switch_panel_info_openflow_version').html(d.data.openflow_version);
+        $('#switch_panel_info_switch_vendor').html(d.data.switch_vendor);
+        $('#switch_panel_info_ip_address').html(d.data.ip_address);
+        $('#switch_panel_info_color').html(d.data.switch_color);
+    }
 
     function linkArc(d) {
         d3.selectAll("line")
@@ -390,7 +437,6 @@ var ForceGraph = function(p_selector, p_data) {
     function transform(d) {
         return "translate(" + d.x + "," + d.y + ")";
     }
-
     function transformNode(d) {
         return_val = '';
         if (d.type == "port") {
@@ -437,7 +483,6 @@ var ForceGraph = function(p_selector, p_data) {
 
     // Use elliptical arc path segments to doubly-encode directionality.
     function ticked(d) {
-
         d3.selectAll("line").attr("d", linkArc);
         d3.selectAll(".node").attr("transform", transformNode);
         d3.selectAll(".domain").attr("transform", transform);
@@ -447,33 +492,6 @@ var ForceGraph = function(p_selector, p_data) {
 
     this.draw = function() {
         force.stop();
-
-
-        // setting edge color
-//        for (var x in _data.links) {
-//            for (var y in _data.edges_data) {
-//                if ((_data.links[x].source.name == _data.edges_data[y].from && _data.links[x].target.name == _data.edges_data[y].to) ||
-//                     (_data.links[x].target.name == _data.edges_data[y].from && _data.links[x].source.name == _data.edges_data[y].to)) {
-//                    // setting edge color
-//                    if (_data.edges_data[y].color) {
-//                        if (typeof _data.links[x].color == 'undefined') {
-//                            _data.links[x].color = _data.edges_data[y].color;
-//                        }
-//                    } else {
-//                        _data.links[x].color = sdncolor.color_default;
-//                    }
-//                }
-//            }
-//        }
-//
-//        for (var x in _data.links) {
-//            // setting highlight helper
-//            addConnection(_data.links[x].source.id, _data.links[x].target.id);
-//        }
-
-
-        // reconfigure drag, so switch drag take precedence over panning
-        // Per-type markers, as they don't inherit styles.
 
         // draw link paths
         path = path.data(_data.links, function(d) { return d.id; });
@@ -505,46 +523,18 @@ var ForceGraph = function(p_selector, p_data) {
                     })
                     .merge(path);
 
-        // domain draw
-//        rect = rect.data(_data.rects, function(d) { return d.id;});
-//        rect.exit().remove();
-//        rect = rect
-//            .enter()
-//                .append("path")
-//                .attr("class", "node")
-//                  .attr("d", d3.symbol()
-//                    .type(function(d) {
-//                      //return (d.shapetype)
-//                      return d3.symbolCross;
-//                    }).size("4096"))
-//
-//
-//                .attr("id", function(d) { return "domain-" + d.id; })
-//                .attr("x", 0)
-//                .attr("y", 0)
-//                .attr("width", function(d) { return SIZE[d.type]||nominal_base_node_size; })
-//                .attr("height", function(d) { return SIZE[d.type]||nominal_base_node_size; })
-//                .attr("fill", function(d) { return d.background_color; })
-//                .attr("class", function(d) { return "domain"; })
-//                .call(d3.drag()
-//                    .on("start", _nodeDragstarted)
-//                    .on("drag", _nodeDragged)
-//                    .on("end", _nodeDragended))
-//                .merge(rect);
-
         // switch draw
         node = node.data(_data.nodes, function(d) { return d.id;});
         node.exit().remove();
         node = node
             .enter()
-//                .append("circle")
                 .append("path")
                 .attr("d", d3.symbol()
                     .type(function(d) {
-                        if (d.type == 'domain') { return d3.symbolCross; }
+                        if (d.type == 'domain') { return d3.symbolWye; }
                         return d3.symbolCircle;
-
-                    }).size(function(d) { return (SIZE_PATH[d.type]); }))
+                    })
+                    .size(function(d) { return (SIZE_PATH[d.type]); }))
                 .attr("id", function(d) { return "node-" + d.id; })
                 .attr("r", function(d) { return SIZE[d.type]||nominal_base_node_size; })
                 .attr("fill", function(d) { return d.background_color; })
@@ -566,10 +556,14 @@ var ForceGraph = function(p_selector, p_data) {
                     d3.event.stopPropagation();
                     if (d.type == 'port') {
                         set_port_focus(d);
-                    } else {
+                    } else if (d.type == 'switch') {
                         // focus_node to control highlight events
                         focus_node = d;
                         set_switch_focus(d)
+                    } else if (d.type == 'domain') {
+                        // focus_node to control highlight events
+                        focus_node = d;
+                        set_domain_focus(d)
                     }
                 })
                 .on("mouseout", function(d) {
@@ -589,7 +583,6 @@ var ForceGraph = function(p_selector, p_data) {
                     .on("drag", _nodeDragged)
                     .on("end", _nodeDragended))
                 .merge(node);
-
 
     	var tocolor = "fill";
         var towhite = "stroke";
@@ -634,8 +627,6 @@ var ForceGraph = function(p_selector, p_data) {
         force.restart();
         // restart force animation
         for (var i = 10; i > 0; --i) force.tick();
-
-
     }
 }
 
@@ -663,21 +654,23 @@ var SDNColor = function() {
 
     this.color_default = '#8EB5EA';
 
-
-    this.NODE_COLOR = {'switch': '#8EB5EA',
-                      'port': "#0cc"};
-    this.NODE_COLOR_HIGHLIGHT = {'switch': "#4D7C9D",
-                                'port': "#007C9D"};
+    this.NODE_COLOR = {'domain': '#8EB5EA',
+                       'switch': '#8EB5EA',
+                       'port': "#0cc"};
+    this.NODE_COLOR_HIGHLIGHT = {'domain': "#4D7C9D",
+                                 'switch': "#4D7C9D",
+                                 'port': "#007C9D"};
 
     //var NODE_BORDER_COLOR = {'switch': 30,
     //                         'port': 5};
 
-    this.LINK_COLOR = {'switch': "#888",
+    this.LINK_COLOR = {'domain': "#888",
+                       'switch': "#888",
                       'port': "#888"};
     //var NODE_BORDER_COLOR_HIGHLIGHT = {'switch': 30,
     //                                   'port': 5};
-    this.LINK_COLOR_HIGHLIGHT = {'switch': "#4D7C9D"};
-    this.LINK_COLOR_HIDE = {'switch': 'white'};
+    this.LINK_COLOR_HIGHLIGHT = {'domain': "#4D7C9D", 'switch': "#4D7C9D"};
+    this.LINK_COLOR_HIDE = {'domain': 'white', 'switch': 'white'};
 
     /**
      * Get color CSS name.
@@ -694,7 +687,6 @@ var SDNColor = function() {
         return result;
     }
 }
-
 
 
 var SDNTopology = function() {
@@ -715,6 +707,15 @@ var SDNTopology = function() {
                 var switch_obj = new Switch(jsonObj[x].dpid);
                 switch_obj.n_ports = jsonObj[x].n_ports;
                 switch_obj.n_tables = jsonObj[x].n_tables;
+
+                switch_obj.name = jsonObj[x].switch_name;
+                switch_obj.switch_color = jsonObj[x].switch_color;
+                switch_obj.tcp_port = jsonObj[x].tcp_port;
+                switch_obj.openflow_version = jsonObj[x].openflow_version;
+                switch_obj.switch_vendor = jsonObj[x].switch_vendor;
+                switch_obj.ip_address = jsonObj[x].ip_address;
+                switch_obj.number_flows = jsonObj[x].number_flows;
+
                 sdntopology.switches.push(switch_obj);
             }
             // sort
@@ -1172,13 +1173,33 @@ var Link = function() {
  * Switch representation.
  */
 var Switch = function(switch_id) {
+/*
+"datapath_id": "00004af7b0f68749",
+"switch_color": "char",
+"tcp_port": integer,
+"openflow_version": "string",
+"switch_vendor": "string",
+"ip_address": "ip_address",
+"switch_name": "string",
+"number_flows": integer
+*/
     this.id = switch_id;
-    this.dpid = switch_id;
+    this.dpid = switch_id; // datapath_id
+
+    this.name;
+    this.switch_color;
+    this.tcp_port
+    this.openflow_version;
+    this.switch_vendor;
+    this.ip_address;
+    this.number_flows;
 
     this.n_ports;
     this.n_tables;
 
     this.ports;
+
+    this.domain; // if the switch belongs to an interdomain
 
     /**
      * Get switch fantasy name from configuration data.
@@ -1190,7 +1211,7 @@ var Switch = function(switch_id) {
                 return name;
             }
         }
-        return null;
+        return this.name;
     }
 
     /**
@@ -1237,7 +1258,7 @@ var Switch = function(switch_id) {
 
     this.get_d3js_data = function() {
         node_id = this.id;
-        node_obj = {id: node_id, dpid: node_id, name: node_id, data:this, label:this.get_node_name(), physics:true, mass:2, stroke_width:1, type:"switch", x:300, y:300};
+        node_obj = {id: node_id, dpid: node_id, name: node_id, data:this, label:this.get_node_name(), physics:true, mass:2, stroke_width:1, type:"switch"};
         // Trace coloring
         if (typeof(node_obj.color)==='undefined') {
             node_obj.background_color = sdncolor.NODE_COLOR[node_obj.type];
@@ -1469,7 +1490,7 @@ var D3JS = function() {
         // create a network
         var selector = "#topology__canvas";
 
-        this.resetAllNodes();
+//        this.resetAllNodes();
 
         // create an array with nodes
         this._create_network_nodes(with_colors, with_trace);
@@ -1506,6 +1527,8 @@ var D3JS = function() {
             _id = id.replace(" ", "_");
         }
         var domain_obj = new Domain(_id);
+        domain_obj.label = label;
+
         sdntopology.domains.push(domain_obj);
 
         // create an array with nodes
@@ -1533,15 +1556,18 @@ var D3JS = function() {
         forcegraph.draw();
     }
 
-    this.add_new_node = function(dpid=null, label="") {
+    this.add_new_node = function(p_dpid=null, p_label="", p_domain=null) {
         with_colors = typeof with_colors !== 'undefined' ? with_colors : true;
         with_trace = typeof with_trace !== 'undefined' ? with_trace : true;
 
         var _dpid = "";
-        if (dpid) {
-            _dpid = dpid;
+        if (p_dpid) {
+            _dpid = p_dpid;
         }
         var _switch_obj = new Switch(_dpid);
+        if (p_label) { _switch_obj.name = p_label; }
+        if (p_domain) { _switch_obj.domain = p_domain; }
+
         sdntopology.switches.push(_switch_obj);
 
         // create an array with nodes

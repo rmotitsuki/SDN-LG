@@ -260,3 +260,15 @@ text {
 #sdn-trace-form-row-forms {
     overflow: hidden;
 }
+
+
+#switch_panel_info_collapse > div > div > ul > li > span:nth-child(1) {
+    font-weight: bold;
+}
+
+#trace_panel_info .loading-icon-div {
+  margin:0;
+  padding: 0;
+  display:none;
+  float:right;
+}

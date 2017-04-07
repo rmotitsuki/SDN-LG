@@ -92,26 +92,26 @@ var SDNTrace = function() {
         * Clear trace forms, result, result pannel, dialog modal, graph highlight, graph trace
         */
         $('#trace-result-content').html('');
-        $('.loading-icon-div').show();
+        $('#trace_panel_info .loading-icon-div').hide();
 
         // clear d3 graph highlight nodes, links
         forcegraph.exit_highlight();
 
-        // clear d3 graph trace classes
+//        // clear d3 graph trace classes
         $("path").removeClass("node-trace-active");
         $("line").removeClass("link-trace-active");
         $("path").each(function() {
             if ($(this).attr("data-nodeid")) {
             }
         });
-
-        // remove d3 nodes and links related to these nodes
-        $('path').each(function() {
-            if($(this).attr('data-nodeid')) {
-                _id = $(this).attr('data-nodeid');
-                d3lib.removeNode(_id);
-            }
-        });
+//
+//        // remove d3 nodes and links related to these nodes
+//        $('path').each(function() {
+//            if($(this).attr('data-nodeid')) {
+//                _id = $(this).attr('data-nodeid');
+//                d3lib.removeNode(_id);
+//            }
+//        });
         // close modal trace form
         sdn_trace_form_dialog.dialog( "close" );
     }
@@ -131,6 +131,9 @@ var SDNTrace = function() {
             // Trigger AJAX to retrieve the trace result
             sdntrace.trigger_trace_listener(json);
         }
+
+        // show loading icon
+        $('#trace_panel_info .loading-icon-div').show();
 
         // AJAX call
         if (DEBUG) {
@@ -155,7 +158,6 @@ var SDNTrace = function() {
                 }
             })
             .always(function() {
-                $('.loading-icon-div').hide();
                 $('#trace_panel_info').show();
             });
         }
@@ -334,6 +336,9 @@ var SDNTrace = function() {
     this.trigger_trace_listener = function(trace_id) {
         sdntrace.last_trace_id = trace_id;
 
+        // show load icon
+        $('#trace_panel_info .loading-icon-div').show();
+
         // Clearing the trace panel
         $('#trace-result-content').html("");
         $('#trace_panel_info_collapse').collapse("hide");
@@ -347,13 +352,15 @@ var SDNTrace = function() {
         _trace_timer_counter = 0;
 
         clearTimeout(_thread_trace_listener);
+
+        // hide loading icon
+        $('#trace_panel_info .loading-icon-div').hide();
     }
 
     var debug_trace_trigger_counter = 10;
     var debug_timeout_trace_trigger_counter = 0;
 
     this.call_trace_listener = function(trace_id) {
-
         var flag_trace_trigger_again = true;
         var html_render = function(jsonObj) {
             /**
@@ -361,25 +368,41 @@ var SDNTrace = function() {
             */
             html_content = ""
             html_content += "<div class='row'>";
-            html_content += "<div class='col-sm-12'>";
-            html_content += "<strong>Start time:</strong>" + jsonObj.start_time;
-            html_content += "<br>";
-            html_content += "<strong>Total time:</strong>" + jsonObj.total_time;
-            html_content += "<hr>";
+            html_content += "<div class='col-sm-4'>";
+            html_content += "<strong>Start from:</strong>";
             html_content += "</div>";
+            for (var i = 0, len = jsonObj.result.length; i < len; i++) {
+                if (jsonObj.result[i].type == REST_TRACE_TYPE.STARTING) {
+                    html_content += "<div class='col-sm-5'>";
+                    html_content += jsonObj.result[i].dpid;
+                    html_content += "</div><div class='col-sm-3'>";
+                    html_content += jsonObj.result[i].port;
+                    html_content += "</div>";
+                }
+            }
+            html_content += "</div>";
+
+            html_content += "<div class='row'><div class='col-sm-12'>";
+            html_content += "<strong>Start time: </strong>" + jsonObj.start_time;
+            html_content += "</div></div>";
+
+            html_content += "<div class='row'><div class='col-sm-12'>";
+            html_content += "<strong>Total time: </strong>" + jsonObj.total_time;
+            html_content += "</div></div>";
+            html_content += "<hr>";
             html_content += "<div class='col-sm-12'>";
             html_content += "<table class='table table-striped'>";
             html_content += "<thead><tr><th></th><th>Switch/DPID</th><th>Incoming Port</th><th>Time</th></tr></thead>";
             html_content += "<tbody>";
 
             for (var i = 0, len = jsonObj.result.length; i < len; i++) {
-                html_content += "<tr data-type="+ jsonObj.result[i].type +">";
-                html_content += "<td>" + (i+1) + "</td>";
-                if (jsonObj.result[i].type == REST_TRACE_TYPE.STARTING) {
-                    html_content += "<td>" + jsonObj.result[i].dpid + "</td>";
-                    html_content += "<td>" + jsonObj.result[i].port + "</td>";
-                    html_content += "<td>" + "</td>";
-                } else if (jsonObj.result[i].type == REST_TRACE_TYPE.TRACE) {
+
+                if (jsonObj.result[i].type != REST_TRACE_TYPE.STARTING) {
+                    html_content += "<tr data-type="+ jsonObj.result[i].type +">";
+                    html_content += "<td>" + (i) + "</td>";
+                }
+
+                if (jsonObj.result[i].type == REST_TRACE_TYPE.TRACE) {
                     html_content += "<td>" + jsonObj.result[i].dpid + "</td>";
                     html_content += "<td>" + jsonObj.result[i].port + "</td>";
                     html_content += "<td>" + jsonObj.result[i].time + "</td>";
@@ -426,12 +449,18 @@ var SDNTrace = function() {
         }
 
         var _add_new_html_node = function(_id) {
+            /**
+            Add html data selector after add a new node
+            */
             var html_selector = "#node-" + _id;
             $(html_selector).addClass("new-node node-trace-active");
             $(html_selector).attr("data-nodeid", _id);
         }
 
         var _add_new_html_link = function(_id_from, _id_to) {
+            /**
+            Add html data selector after add a new link
+            */
             var html_selector = "#link-" + _id_from +"-"+ _id_to;
             $(html_selector).addClass("new-link link-trace-active");
             $(html_selector).attr("data-linkid", _id_from +"-"+ _id_to);
@@ -440,7 +469,11 @@ var SDNTrace = function() {
         var ajax_done = function(jsonObj) {
             if (jsonObj.result.length > 0) {
                 var flag_has_domain = false;
-                var last_node_id
+                // temporary var to last node
+                var last_node_id = null;
+                // temporary var to last interdomain
+                var last_domain_id = null;
+
                 for (var i = 0, len = jsonObj.result.length; i < len; i++) {
                     var result_item = jsonObj.result[i];
                     var _id = null;
@@ -448,7 +481,10 @@ var SDNTrace = function() {
                     if (result_item.hasOwnProperty("domain")) {
                         // Add new domain node
                         _id = result_item.domain.replace(" ", "_");
-                        d3lib.add_new_node_domain(_id);
+                        _label = result_item.domain;
+                        // add node data do d3
+                        d3lib.add_new_node_domain(_id, _label);
+                        // add html data
                         _add_new_html_node(_id);
 
                         // Add new link
@@ -456,12 +492,13 @@ var SDNTrace = function() {
                         _add_new_html_link(last_node_id, _id);
 
                         flag_has_domain = true;
+                        last_domain_id = _id;
                     }
                     if (result_item.hasOwnProperty("dpid")) {
                         _id = result_item.dpid;
                         if (flag_has_domain) {
                             // Add new switch node related to new domain
-                            d3lib.add_new_node(_id);
+                            d3lib.add_new_node(_id, "", last_domain_id);
                             _add_new_html_node(_id);
 
                             // Add new link
@@ -469,7 +506,6 @@ var SDNTrace = function() {
                             _add_new_html_link(last_node_id, _id);
                         }
                         $("#node-" + _id).addClass("node-trace-active");
-
                     }
                     if (i > 0 && jsonObj.result[i-1].hasOwnProperty("dpid") && jsonObj.result[i].hasOwnProperty("dpid")) {
                         // Add new link between nodes
@@ -489,6 +525,8 @@ var SDNTrace = function() {
                 }
             }
             html_render(jsonObj);
+
+            //forcegraph.draw();
         }
 
         // counting the trace time elapsed
@@ -507,6 +545,7 @@ var SDNTrace = function() {
 
             json = "";
             debug_trace_trigger_counter = debug_trace_trigger_counter + 1;
+
             if (debug_trace_trigger_counter == 1) { json = MOCK_JSON_TRACE_RESULT_PART1; }
             else if (debug_trace_trigger_counter == 2) { json = MOCK_JSON_TRACE_RESULT_PART2; }
             else if (debug_trace_trigger_counter == 3) { json = MOCK_JSON_TRACE_RESULT_PART3; }
@@ -521,15 +560,15 @@ var SDNTrace = function() {
                     debug_timeout_trace_trigger_counter = 0;
                  }
             } else if (debug_trace_trigger_counter == 5) {
-                debug_trace_trigger_counter = 0;
-                json = MOCK_JSON_TRACE_RESULT;
+                debug_trace_trigger_counter = 1;
+                json = MOCK_JSON_TRACE_RESULT_PART1;
             } else if (debug_trace_trigger_counter > 5) {
                 json = MOCK_JSON_TRACE_RESULT_INTERDOMAIN;
                 debug_trace_trigger_counter = 0;
-                console.log('interdomain json');
             }
 
             var jsonobj = $.parseJSON(json);
+
             ajax_done(jsonobj);
 
         } else {
@@ -570,7 +609,6 @@ var SDNTrace = function() {
             // render D3 force
             d3lib.render_topology();
             $('#topology__canvas').show();
-
         } else {
             var jqxhr = $.ajax({
                 url:"/sdntrace/trace",
@@ -592,7 +630,6 @@ var SDNTrace = function() {
 
 /* Initial load */
 $(function() {
-
     sdntrace = new SDNTrace();
 
     // Trace form modal
