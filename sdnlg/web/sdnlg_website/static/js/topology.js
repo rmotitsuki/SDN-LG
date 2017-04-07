@@ -626,7 +626,7 @@ var ForceGraph = function(p_selector, p_data) {
 
         force.restart();
         // restart force animation
-        for (var i = 10; i > 0; --i) force.tick();
+        for (var i = 50; i > 0; --i) force.tick();
     }
 }
 
@@ -1258,7 +1258,7 @@ var Switch = function(switch_id) {
 
     this.get_d3js_data = function() {
         node_id = this.id;
-        node_obj = {id: node_id, dpid: node_id, name: node_id, data:this, label:this.get_node_name(), physics:true, mass:2, stroke_width:1, type:"switch"};
+        node_obj = {id: node_id, dpid: node_id, name: node_id, data:this, label:this.get_node_name(), physics:true, mass:2, stroke_width:1, type:"switch", x:300, y:300};
         // Trace coloring
         if (typeof(node_obj.color)==='undefined') {
             node_obj.background_color = sdncolor.NODE_COLOR[node_obj.type];
@@ -1298,7 +1298,7 @@ var Domain = function(domain_id, label) {
     this.label = label;
 
     this.get_d3js_data = function() {
-        node_obj = {id: this.id, name: null, data:this, label:this.label, physics:true, mass:2, stroke_width:1, type:"domain"};
+        node_obj = {id: this.id, name: null, data:this, label:this.label, physics:true, mass:2, stroke_width:1, type:"domain", x:300, y:300};
         node_obj.background_color = sdncolor.NODE_COLOR[node_obj.type];
 
         return node_obj;
