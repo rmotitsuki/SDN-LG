@@ -3,6 +3,11 @@
 body {
   padding-top: 50px;
 }
+
+body > div.box > nav > div {
+    //width: auto;
+}
+
 /* navigation bar menu */
 .navbar-brand {
   padding:0;

@@ -25,16 +25,44 @@ jQuery(function($) {
     <div class="col-md-12">
         <div class="panel panel-default">
           <div class="panel-heading">
-            <h3 class="panel-title">Topology</h3>
+              <div class="row">
+                <div class="collapse navbar-collapse col-md-1">
+                  <div class="pull-left ">
+                    <button id="topology__toolbar_menu_button" type="button" class="navbar-toggle-always collapsed" data-toggle="collapse" data-target="#topology__toolbar_buttons" aria-expanded="false" aria-controls="navbar">
+                      <span class="icon-bar-always"></span>
+                      <span class="icon-bar-always"></span>
+                      <span class="icon-bar-always"></span>
+                    </button>
+                  </div>
+                </div>
+                <h3 class="panel-title col-md-11">Topology</h3>
+              </div>
           </div>
           <div class="panel-body col-md-12">
             <div id="topology__toolbar" class="col-md-12">
-              <button type="button" id="topology__toolbar__btn__label__link"
+                <div class="collapse" id="topology__toolbar_buttons" style="position:absolute;z-index:100">
+                  <ul class="nav nav-tabs">
+                      <li><button type="button" id="topology__toolbar__btn__label__link"
                       class="btn btn-primary" data-toggle="button"
                       aria-pressed="false" autocomplete="off" aria-label="Link"
                       title="Toggle link labels visibility">
                 L
-              </button>
+              </button></li>
+                      <li><button type="button" id="topology__toolbar__btn__label__speed"
+                      class="btn btn-primary" data-toggle="button"
+                      aria-pressed="false" autocomplete="off" aria-label="Link"
+                      title="Toggle link speed labels visibility">
+                S
+              </button></li>
+                      <li><button type="button" id="topology__toolbar__btn__clear_trace"
+                      class="btn btn-primary" data-toggle="button"
+                      aria-pressed="false" autocomplete="off" aria-label="Link"
+                      title="Test. Add nodes">
+                clear trace
+              </button></li>
+                  </ul>
+                </div>
+
               <!--
               <button type="button" id="topology__toolbar__btn__label__link_number"
                       class="btn btn-primary" data-toggle="button"
@@ -43,12 +71,7 @@ jQuery(function($) {
                 LN
               </button>
               -->
-              <button type="button" id="topology__toolbar__btn__label__speed"
-                      class="btn btn-primary" data-toggle="button"
-                      aria-pressed="false" autocomplete="off" aria-label="Link"
-                      title="Toggle link speed labels visibility">
-                S
-              </button>
+
 
               <!--<button type="button" id="topology__toolbar__btn__add_node"-->
                       <!--class="btn btn-primary" data-toggle="button"-->
@@ -56,12 +79,7 @@ jQuery(function($) {
                       <!--title="Test. Add nodes">-->
                 <!--add node-->
               <!--</button>-->
-              <button type="button" id="topology__toolbar__btn__clear_trace"
-                      class="btn btn-primary" data-toggle="button"
-                      aria-pressed="false" autocomplete="off" aria-label="Link"
-                      title="Test. Add nodes">
-                clear trace
-              </button>
+
 
             </div>
             <div id="splitter__div" class="col-md-12">
@@ -113,7 +131,7 @@ jQuery(function($) {
                               </div>
                             </div>
                         </div>
-                        <div id="port_panel_info" style="" class="panel panel-default">
+                        <div id="port_panel_info" style="display:none;" class="panel panel-default">
                           <div class="panel-heading">
                               <h4 class="panel-title">
                                 <a data-toggle="collapse" href="#port_panel_info_collapse">Port</a>
@@ -125,31 +143,34 @@ jQuery(function($) {
                                   <ul>
                                     <li id="port_panel_info_name"><span>Name: </span><span id="port_panel_info_name_value"></span></li>
                                     <li id="port_panel_info_number"><span>Number: </span><span id="port_panel_info_number_value"></span></li>
-                                    <li id="port_panel_info_flows"><span>N. Flows: </span><span id="port_panel_info_flows_value"></span></li>
+                                    <!--<li id="port_panel_info_flows"><span>N. Flows: </span><span id="port_panel_info_flows_value"></span></li>-->
+                                      <li id="port_panel_info_speed"><span>Speed: </span><span id="port_panel_info_speed_value"></span></li>
+                                      <!--<li id="port_panel_info_uptime"><span>Uptime: </span><span id="port_panel_info_uptime_value"></span></li>-->
+                                      <li id="port_panel_info_status"><span>Status: </span><span id="port_panel_info_status_value"></span></li>
                                   </ul>
                                 </div>
                               </div>
                           </div>
                         </div>
-                        <div id="switch_to_panel_info" style="" class="panel panel-default">
-                          <div class="panel-heading">
-                              <h4 class="panel-title">
-                                <a data-toggle="collapse" href="#switch_to_panel_info_collapse">Switch Connected</a>
-                              </h4>
-                          </div>
-                          <div id="switch_to_panel_info_collapse" class="panel-collapse collapse">
-                              <div class="panel-body">
-                                <div>
-                                  <ul>
-                                    <li id="switch_to_panel_info_name"><span>Name:</span><span id="switch_to_panel_info_name_value"></span></li>
-                                    <li id="switch_to_panel_info_dpid"><span>DPID: </span><span id="switch_to_panel_info_dpid_value"></span></li>
-                                    <li id="switch_to_panel_info_flows"><span>N. Flows: </span><span id="switch_to_panel_info_flows_value"></span></li>
-                                  </ul>
-                                </div>
-                              </div>
-                          </div>
-                        </div>
-                        <div id="trace_panel_info" style="" class="panel panel-default">
+                        <!--<div id="switch_to_panel_info" style="" class="panel panel-default">-->
+                          <!--<div class="panel-heading">-->
+                              <!--<h4 class="panel-title">-->
+                                <!--<a data-toggle="collapse" href="#switch_to_panel_info_collapse">Switch Connected</a>-->
+                              <!--</h4>-->
+                          <!--</div>-->
+                          <!--<div id="switch_to_panel_info_collapse" class="panel-collapse collapse">-->
+                              <!--<div class="panel-body">-->
+                                <!--<div>-->
+                                  <!--<ul>-->
+                                    <!--<li id="switch_to_panel_info_name"><span>Name:</span><span id="switch_to_panel_info_name_value"></span></li>-->
+                                    <!--<li id="switch_to_panel_info_dpid"><span>DPID: </span><span id="switch_to_panel_info_dpid_value"></span></li>-->
+                                    <!--<li id="switch_to_panel_info_flows"><span>N. Flows: </span><span id="switch_to_panel_info_flows_value"></span></li>-->
+                                  <!--</ul>-->
+                                <!--</div>-->
+                              <!--</div>-->
+                          <!--</div>-->
+                        <!--</div>-->
+                        <div id="trace_panel_info" style="display:none;" class="panel panel-default">
                           <div class="panel-heading">
                               <h4 class="panel-title">
                                 <a data-toggle="collapse" href="#trace_panel_info_collapse">Trace Result</a>
