@@ -60,9 +60,10 @@ var MOCK_JSON_TOPOLOGY = '[' +
 
 var MOCK_JSON_TOPOLOGY_TRACE = '[' +
     '{"0000000000000001": {' +
-        '"2": {"type": "link", "neighbor_port": 1, "neighbor_dpid": "0000000000000002"}' +
-//        '"2": {"type": "link", "neighbor_port": 1, "neighbor_dpid": "0000000000000002"},' +
-//        '"3": {"type": "host", "neighbor_name": "HOST1"}' +
+//        '"2": {"type": "link", "neighbor_port": 1, "neighbor_dpid": "0000000000000002"}' +
+        '"2": {"type": "link", "neighbor_port": 1, "neighbor_dpid": "0000000000000002"},' +
+        '"3": {"type": "host", "neighbor_name": "HOST1"},' +
+        '"4": {"type": "host", "neighbor_name": "HOST2"}' +
     '}},' +
     '{"0000000000000002": {' +
         '"2": {"type": "link", "neighbor_port": 1, "neighbor_dpid": "0000000000000003"}' +
@@ -96,7 +97,8 @@ var MOCK_JSON_SWITCH_PORTS = '[' +
 var MOCK_JSON_SDNTRACE_SWITCH_PORTS = '{' +
     '"1": {"speed": "10GB_FD", "name": "s1-eth1", "port_no": 1, "status": "up" },' +
     '"2": {"speed": "10GB_FD", "name": "s1-eth2", "port_no": 2, "status": "up" },' +
-    '"3": {"speed": "10GB_FD", "name": "s1-eth3", "port_no": 3, "status": "up"}' +
+    '"3": {"speed": "10GB_FD", "name": "s1-eth3", "port_no": 3, "status": "up"},' +
+    '"4": {"speed": "10GB_FD", "name": "s1-eth4", "port_no": 4, "status": "up"}' +
     '}';
 
 var SPEED_100GB = 100000000000;
@@ -1064,35 +1066,35 @@ var SDNTopology = function() {
                                     }
 
                                 } else if (p_neighbor.type == "host") {
-//                                    // Add new domain node
-//                                    _id = "host_" + p_neighbor.neighbor_name;
-//                                    _label = p_neighbor.neighbor_name;
-//
-//                                    // add node data do d3
-//                                    var host_obj = d3lib.add_new_node_host(_id, _label);
-//                                    var dpid2 = host_obj.id;
-//                                    var port2 = p_neighbor.neighbor_port;
-//
-//
-//                                    var dpid2 = host_obj.id;
-//                                    var linkObj = new Link();
-//
-//                                    linkObj.node1 = sdntopology.get_node_by_id(dpid1);
-//                                    linkObj.node2 = host_obj;
-//
-//                                    // creating switch ports
-//                                    var node1_port = new Port(dpid1 +'_'+ port1, port1, "");
-//                                    linkObj.node1.ports = [];
-//                                    linkObj.node1.ports.push(node1_port);
-//
-//                                    // creating switch ports
-//                                    var node2_port = new Port(dpid2 +'_'+ port2, port2, "");
-//                                    linkObj.node2.ports = [];
-//                                    linkObj.node2.ports.push(node2_port);
-//
-//                                    linkObj.label_num1 = port1;
-//                                    linkObj.label_num2 = port2;
+                                    // Add new host node
+                                    var _host_label = "";
+                                    if (typeof(p_neighbor.neighbor_name)!=='undefined') {
+                                        _host_label = p_neighbor.neighbor_name;
+                                    }
 
+                                    // add node data do d3
+                                    var host_obj = d3lib.add_new_node_host(dpid1, port1, _host_label);
+
+                                    var dpid2 = host_obj.id;
+                                    var port2 = p_neighbor.neighbor_port;
+
+                                    var linkObj = new Link();
+
+                                    linkObj.node1 = sdntopology.get_node_by_id(dpid1);
+                                    linkObj.node2 = host_obj;
+
+                                    // creating switch ports
+                                    var node1_port = new Port(dpid1 +'_'+ port1, port1, "");
+                                    linkObj.node1.ports = [];
+                                    linkObj.node1.ports.push(node1_port);
+
+                                    // creating switch ports
+                                    var node2_port = new Port(dpid2 +'_'+ port2, port2, "");
+                                    linkObj.node2.ports = [];
+                                    linkObj.node2.ports.push(node2_port);
+
+                                    linkObj.label_num1 = port1;
+                                    linkObj.label_num2 = port2;
                                 } else if (p_neighbor.type == "interdomain") {
 
                                 }
@@ -1101,8 +1103,6 @@ var SDNTopology = function() {
                                 if (linkObj) {
                                     sdntopology.add_topology(linkObj);
                                 }
-
-
                             });
                         }
                     });
@@ -1564,8 +1564,8 @@ var Domain = function(domain_id, label) {
 /**
  * Host representation.
  */
-var Host = function(host_id, label) {
-    this.id = host_id;
+var Host = function(node_id, port_id, label) {
+    this.id = Host.create_id(node_id, port_id);
     this.label = label;
 
     this.get_d3js_data = function() {
@@ -1579,6 +1579,18 @@ var Host = function(host_id, label) {
         return this.label;
     }
 }
+Host.create_id = function(node_id, port_id) {
+        if (node_id == null || node_id == "") {
+            console.log("[ERROR] Host.create_id node_id empty.");
+            throw "[ERROR] Host.create_id node_id empty.";
+        }
+        if (port_id == null || port_id == "") {
+            console.log("[ERROR] Host.create_id port_id empty.");
+            throw "[ERROR] Host.create_id port_id empty.";
+        }
+
+        return "host_" + node_id + "_" + port_id;
+    }
 
 // Return switch port id if the class is used with strings
 Port.prototype.toString = function(){ return this.id; };
@@ -1587,7 +1599,15 @@ var D3JS = function() {
     this.nodes = null;
     this.edges = null;
 
-    this.findNode = function(id) {
+    this.findNode = function(p_id) {
+        var id = '';
+        // Check if the p_id is an object or the real ID attribute
+        if ( typeof p_id.id === 'undefined') {
+            id = p_id;
+        } else {
+            id = p_id.id;
+        }
+
         for (var k in this.nodes){
             if (this.nodes.hasOwnProperty(k) && this.nodes[k] && this.nodes[k].id == id) {
                  return this.nodes[k];
@@ -1784,23 +1804,19 @@ var D3JS = function() {
         // Draw the graph for the first time
     }
 
-    this.add_new_node_host = function(id=null, label="") {
+    this.add_new_node_host = function(p_dpid, p_port_id, p_label="") {
         if (this.nodes) {
+            var _host_id = Host.create_id(p_dpid, p_port_id);
             for (y = 0; y < this.nodes.length; y++) {
-                if(this.nodes[y].id == id) {
-                    console.log('NODE ALREADY HERE!!!! ' + id)
+                if(this.nodes[y].id == _host_id) {
+                    console.log('NODE ALREADY HERE!!!! ' + _host_id)
                     // do nothing
                     return this.nodes[y];
                 }
             }
         }
 
-        var _id = "";
-        if (id) {
-            _id = id.replace(" ", "_");
-        }
-        var host_obj = new Host(_id);
-        host_obj.label = label;
+        var host_obj = new Host(p_dpid, p_port_id, p_label);
 
         sdntopology.domains.push(host_obj);
 
