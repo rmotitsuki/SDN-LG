@@ -68,6 +68,8 @@
 /* toolbar menu button to toggle the menu itens. Inside bars */
 #topology__toolbar_buttons li {
     margin-right: 10px;
+    clear: both;
+    margin-bottom: 10px;
 }
 #topology__toolbar_menu_button > span {
     border-color: #aaa;

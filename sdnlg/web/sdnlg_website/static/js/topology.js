@@ -681,8 +681,6 @@ var ForceGraph = function(p_selector, p_data) {
         force.nodes(_data.nodes, function(d) { return d.id;});
 
         force.restart();
-        // restart force animation
-        for (var i = 50; i > 0; --i) force.tick();
     }
 }
 
@@ -1037,23 +1035,14 @@ var SDNTopology = function() {
                             var linkObj = new Link();
 
                             // creating switch
-                            linkObj.node1 = new Switch(dpid1);
-                            linkObj.node2 = new Switch(dpid2);
-
-                            // creating switch ports
-//                                    var node1_port = new Port(dpid1 +'_'+ port1, port1, port1_name);
-
                             var node1_port = sdntopology.get_node_by_id(dpid1).get_port_by_id(dpid1, port1);
-
-                            linkObj.node1.ports = [];
-                            linkObj.node1.ports.push(node1_port);
+                            linkObj.node1 = new Switch(dpid1);
+                            linkObj.node1.ports = [node1_port];
 
                             // creating switch ports
-//                                    var node2_port = new Port(dpid2 +'_'+ port2, port2, port2_name);
                             var node2_port = sdntopology.get_node_by_id(dpid2).get_port_by_id(dpid2, port2);
-
-                            linkObj.node2.ports = [];
-                            linkObj.node2.ports.push(node2_port);
+                            linkObj.node2 = new Switch(dpid2);
+                            linkObj.node2.ports = [node2_port];
 
                             // link speed
                             if(node1_port && node1_port.speed) {
@@ -1067,12 +1056,8 @@ var SDNTopology = function() {
                             if (typeof(p_neighbor.neighbor_name)!=='undefined') {
                                 _host_label = p_neighbor.neighbor_name;
                             }
-
                             // add node data do d3
                             var host_obj = d3lib.add_new_node_host(dpid1, port1, _host_label);
-
-                            var dpid2 = host_obj.id;
-                            var port2 = p_neighbor.neighbor_port;
 
                             var linkObj = new Link();
 
@@ -1080,9 +1065,10 @@ var SDNTopology = function() {
                             linkObj.node2 = host_obj;
 
                             // creating host ports
-                            var node2_port = new Port(dpid2 +'_'+ port2, port2, "");
-                            linkObj.node2.ports = [];
-                            linkObj.node2.ports.push(node2_port);
+                            var port2 = p_neighbor.neighbor_port;
+                            var node2_port = new Port(host_obj.id +'_'+ port2, port2, "");
+
+                            linkObj.node2.ports = [node2_port];
                             linkObj.label_num2 = port2;
                         } else if (p_neighbor.type == "interdomain") {
                             // Add new host node
@@ -1098,9 +1084,7 @@ var SDNTopology = function() {
 
                             linkObj.node1 = sdntopology.get_node_by_id(dpid1);
                             linkObj.node2 = domain_obj;
-
                         }
-
                         // Add the node the the topology
                         if (linkObj) {
                             sdntopology.add_topology(linkObj);
