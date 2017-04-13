@@ -673,7 +673,7 @@ var ForceGraph = function(p_selector, p_data) {
             .enter()
                 .append("text")
                     .attr("class", "speed-label")
-                    .text(function(d) { return format_speed(d.speed); })
+                    .text(function(d) { return d.speed; })
                     .merge(link_label);
 
         // setting data
