@@ -1,4 +1,4 @@
-var DEBUG = true;
+var DEBUG = false;
 // Mock json switch list structures. Used for testing purposes.
 var MOCK_JSON_SWITCHES = '[' +
     '{"capabilities": "", "dpid": "0000000000000001", "n_ports": 8, "n_tables": 5},' +
@@ -58,8 +58,8 @@ var MOCK_JSON_TOPOLOGY = '[' +
 //    '"0000000000000006": ["0000000000000005"]' +
 //    '}';
 
-var MOCK_JSON_TOPOLOGY_TRACE = '[' +
-    '{"0000000000000001": {' +
+var MOCK_JSON_TOPOLOGY_TRACE = '{' +
+    '"0000000000000001": {' +
 //        '"2": {"type": "link", "neighbor_port": 1, "neighbor_dpid": "0000000000000002"}' +
         '"2": {"type": "link", "neighbor_port": 1, "neighbor_dpid": "0000000000000002"},' +
         '"3": {"type": "host", "neighbor_name": "HOST1"},' +
@@ -76,7 +76,7 @@ var MOCK_JSON_TOPOLOGY_TRACE = '[' +
     '}},' +
     '{"0000000000000005": {' +
         '"2": {"type": "link", "neighbor_port": 1, "neighbor_dpid": "0000000000000006"}' +
-    '}}]';
+    '}}';
 
 
 
@@ -711,7 +711,7 @@ var SDNColor = function() {
     this.color_default = '#8EB5EA';
 
     this.NODE_COLOR = {'host': 'rgb(192,231,255)',
-                       'domain': '#8EB5EA',
+                       'domain': '#847DAF',
                        'switch': '#8EB5EA',
                        'port': "#0cc"};
     this.NODE_COLOR_HIGHLIGHT = {'domain': "#4D7C9D",
@@ -851,10 +851,10 @@ var SDNTopology = function() {
                 ajax_done(json);
             })
             .fail(function() {
-                console.log( "call_get_switches ajax error" );
+                console.log( "call_sdntrace_get_switches ajax error" );
             })
             .always(function() {
-                console.log( "call_get_switches ajax complete" );
+                console.log( "call_sdntrace_get_switches ajax complete" );
             });
         }
     }
@@ -895,17 +895,17 @@ var SDNTopology = function() {
             ajax_done(jsonobj);
         } else {
             var jqxhr = $.ajax({
-                url:"sdntrace/switches/" + p_dpid + "/info",
+                url:"/sdntrace/switches/" + p_dpid + "/info",
                 dataType: 'json',
                 crossdomain:true,
             }).done(function(json) {
                 ajax_done(json);
             })
             .fail(function() {
-                console.log( "call_get_switches ajax error" );
+                console.log( "call_sdntrace_get_switch_info ajax error" );
             })
             .always(function() {
-                console.log( "call_get_switches ajax complete" );
+                console.log( "call_sdntrace_get_switch_info ajax complete" );
             });
         }
     }
@@ -1024,86 +1024,86 @@ var SDNTopology = function() {
 
             // verify if the json is not a '{}' response
             if (!jQuery.isEmptyObject(jsonObj)) {
-                $.each( jsonObj, function( key, p_node_a ) {
-                    $.each( p_node_a, function( p_dpid1, p_ports ) {
-                        var dpid1 = p_dpid1;
+                $.each( jsonObj, function( p_dpid1, p_node_a ) {
+                    var dpid1 = p_dpid1;
 
-                        if (p_ports) {
-                            $.each( p_ports, function( p_port_id, p_neighbor ) {
+                    $.each( p_node_a, function( p_port_id, p_neighbor ) {
 
-                                var port1 = p_port_id;
+                        var port1 = p_port_id;
+                        if (p_neighbor.type == "link") {
+                            var dpid2 = p_neighbor.neighbor_dpid;
+                            var port2 = p_neighbor.neighbor_port;
 
-                                if (p_neighbor.type == "link") {
-                                    var dpid2 = p_neighbor.neighbor_dpid;
-                                    var port2 = p_neighbor.neighbor_port;
+                            var linkObj = new Link();
 
-                                    var linkObj = new Link();
+                            // creating switch
+                            linkObj.node1 = new Switch(dpid1);
+                            linkObj.node2 = new Switch(dpid2);
 
-                                    // creating switch
-                                    linkObj.node1 = new Switch(dpid1);
-                                    linkObj.node2 = new Switch(dpid2);
-
-                                    // creating switch ports
+                            // creating switch ports
 //                                    var node1_port = new Port(dpid1 +'_'+ port1, port1, port1_name);
 
-                                    var node1_port = sdntopology.get_node_by_id(dpid1).get_port_by_id(dpid1, port1);
+                            var node1_port = sdntopology.get_node_by_id(dpid1).get_port_by_id(dpid1, port1);
 
-                                    linkObj.node1.ports = [];
-                                    linkObj.node1.ports.push(node1_port);
+                            linkObj.node1.ports = [];
+                            linkObj.node1.ports.push(node1_port);
 
-                                    // creating switch ports
+                            // creating switch ports
 //                                    var node2_port = new Port(dpid2 +'_'+ port2, port2, port2_name);
-                                    var node2_port = sdntopology.get_node_by_id(dpid2).get_port_by_id(dpid2, port2);
+                            var node2_port = sdntopology.get_node_by_id(dpid2).get_port_by_id(dpid2, port2);
 
-                                    linkObj.node2.ports = [];
-                                    linkObj.node2.ports.push(node2_port);
+                            linkObj.node2.ports = [];
+                            linkObj.node2.ports.push(node2_port);
 
-                                    // link speed
-                                    if(node1_port && node1_port.speed) {
-                                        linkObj.speed = node1_port.speed;
-                                    } else if(node2_port && node2_port.speed) {
-                                        linkObj.speed = node2_port.speed;
-                                    }
+                            // link speed
+                            if(node1_port && node1_port.speed) {
+                                linkObj.speed = node1_port.speed;
+                            } else if(node2_port && node2_port.speed) {
+                                linkObj.speed = node2_port.speed;
+                            }
+                        } else if (p_neighbor.type == "host") {
+                            // Add new host node
+                            var _host_label = "";
+                            if (typeof(p_neighbor.neighbor_name)!=='undefined') {
+                                _host_label = p_neighbor.neighbor_name;
+                            }
 
-                                } else if (p_neighbor.type == "host") {
-                                    // Add new host node
-                                    var _host_label = "";
-                                    if (typeof(p_neighbor.neighbor_name)!=='undefined') {
-                                        _host_label = p_neighbor.neighbor_name;
-                                    }
+                            // add node data do d3
+                            var host_obj = d3lib.add_new_node_host(dpid1, port1, _host_label);
 
-                                    // add node data do d3
-                                    var host_obj = d3lib.add_new_node_host(dpid1, port1, _host_label);
+                            var dpid2 = host_obj.id;
+                            var port2 = p_neighbor.neighbor_port;
 
-                                    var dpid2 = host_obj.id;
-                                    var port2 = p_neighbor.neighbor_port;
+                            var linkObj = new Link();
 
-                                    var linkObj = new Link();
+                            linkObj.node1 = sdntopology.get_node_by_id(dpid1);
+                            linkObj.node2 = host_obj;
 
-                                    linkObj.node1 = sdntopology.get_node_by_id(dpid1);
-                                    linkObj.node2 = host_obj;
+                            // creating host ports
+                            var node2_port = new Port(dpid2 +'_'+ port2, port2, "");
+                            linkObj.node2.ports = [];
+                            linkObj.node2.ports.push(node2_port);
+                            linkObj.label_num2 = port2;
+                        } else if (p_neighbor.type == "interdomain") {
+                            // Add new host node
+                            var _domain_label = "";
+                            if (typeof(p_neighbor.domain_name)!=='undefined') {
+                                _domain_label = p_neighbor.domain_name;
+                            }
+                            _id = _domain_label.replace(" ", "_");
 
-                                    // creating switch ports
-                                    var node1_port = new Port(dpid1 +'_'+ port1, port1, "");
-                                    linkObj.node1.ports = [];
-                                    linkObj.node1.ports.push(node1_port);
+                            // add node data do d3
+                            var domain_obj = d3lib.add_new_node_domain(_id, _domain_label);
+                            var linkObj = new Link();
 
-                                    // creating switch ports
-                                    var node2_port = new Port(dpid2 +'_'+ port2, port2, "");
-                                    linkObj.node2.ports = [];
-                                    linkObj.node2.ports.push(node2_port);
+                            linkObj.node1 = sdntopology.get_node_by_id(dpid1);
+                            linkObj.node2 = domain_obj;
 
-                                    linkObj.label_num1 = port1;
-                                    linkObj.label_num2 = port2;
-                                } else if (p_neighbor.type == "interdomain") {
+                        }
 
-                                }
-
-                                // Add the node the the topology
-                                if (linkObj) {
-                                    sdntopology.add_topology(linkObj);
-                                }
-                            });
+                        // Add the node the the topology
+                        if (linkObj) {
+                            sdntopology.add_topology(linkObj);
                         }
                     });
                 });
@@ -1213,7 +1213,7 @@ var SDNTopology = function() {
                 if (callback != null && !jQuery.isEmptyObject(jsonObj)) {
                     // render D3 popup
                     try {
-                        callback(dpid, jsonObj);
+                        callback(p_dpid, jsonObj);
                     }
                     catch(err) {
                         console.log("Error callback function: " + callback);
@@ -1377,8 +1377,8 @@ var SDNTopology = function() {
         // setting switch label
         $('#sdn-trace-form-switch-content').html(d.label + " - " + d.dpid);
 
-        sdntopology.call_get_switch_ports(d.dpid, sdntrace._render_html_trace_form_ports);
-
+//        sdntopology.call_get_switch_ports(d.dpid, sdntrace._render_html_trace_form_ports);
+        sdntopology.call_sdntrace_get_switch_ports(d.dpid, sdntrace._render_html_trace_form_ports);
 
         // open modal dialog
         sdn_trace_form_dialog.dialog("open");
@@ -1443,13 +1443,16 @@ var Switch = function(switch_id) {
      * Get switch fantasy name from configuration data.
      */
     this.get_name = function() {
+        if (this.name) {
+            return this.name;
+        }
         if (typeof SDNLG_CONF != 'undefined') {
             var name = SDNLG_CONF.dict[this.id];
             if (name != undefined) {
                 return name;
             }
         }
-        return this.name;
+        return "";
     }
 
     /**
@@ -1457,6 +1460,9 @@ var Switch = function(switch_id) {
      * If there is no name return the switch ID.
      */
     this.get_name_or_id = function() {
+        if (this.name) {
+            return this.name;
+        }
         if (typeof SDNLG_CONF != 'undefined') {
             var name = SDNLG_CONF.dict[this.id];
             if (name != undefined) {
@@ -1471,6 +1477,9 @@ var Switch = function(switch_id) {
      * Return verbose name as: <ID> - <NAME>
      */
     this.get_verbose_name = function() {
+        if (this.name) {
+            return this.id + ' - ' + this.name;
+        }
         if (typeof SDNLG_CONF != 'undefined') {
             var name = SDNLG_CONF.dict[this.id];
             if (name != undefined) {
@@ -1485,6 +1494,10 @@ var Switch = function(switch_id) {
      * Return verbose name to be used on vis.js: <ID>\n<NAME>
      */
     this.get_node_name = function() {
+        if (this.name) {
+            return this.name;
+        }
+
         if (typeof SDNLG_CONF != 'undefined') {
             var name = SDNLG_CONF.dict[this.id];
             if (name != undefined) {
@@ -1814,6 +1827,8 @@ var D3JS = function() {
                     return this.nodes[y];
                 }
             }
+        } else {
+            this.nodes = [];
         }
 
         var host_obj = new Host(p_dpid, p_port_id, p_label);
@@ -1836,12 +1851,16 @@ var D3JS = function() {
     }
 
     this.add_new_node_domain = function(id=null, label="") {
-        for (y = 0; y < this.nodes.length; y++) {
-            if(this.nodes[y].id == id) {
-                console.log('NODE ALREADY HERE!!!! ' + id)
-                // do nothing
-                return this.nodes[y];
+        if(this.nodes) {
+            for (y = 0; y < this.nodes.length; y++) {
+                if(this.nodes[y].id == id) {
+                    console.log('NODE ALREADY HERE!!!! ' + id)
+                    // do nothing
+                    return this.nodes[y];
+                }
             }
+        } else {
+            this.nodes = [];
         }
 
         var _id = "";
