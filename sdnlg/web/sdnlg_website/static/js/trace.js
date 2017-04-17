@@ -114,6 +114,8 @@ var SDNTrace = function() {
 //        });
         // close modal trace form
         sdn_trace_form_dialog.dialog( "close" );
+
+        $('#trace_panel_info').hide();
     }
 
     this.call_trace_request_id = function(json_data) {

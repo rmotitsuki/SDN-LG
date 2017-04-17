@@ -369,6 +369,24 @@ var ForceGraph = function(p_selector, p_data) {
             .style("font-weight", "bold");
     }
 
+    // Show topology colors
+    this.show_topology_colors = function() {
+        var nodes = d3.selectAll(".node");
+        nodes.attr("fill", function(d) {
+                if(d.type == "switch") {
+                    for (var x in sdncolor.colors) {
+                        console.log(d);
+                        console.log(x + " " + d.data.switch_color);
+                        if (x == d.data.switch_color) {
+                            return sdncolor.colors[d.data.switch_color];
+                        }
+                    }
+                }
+                return d.background_color;
+            });
+    }
+
+
 
     // focus highlight (on node mousedown)
     function set_switch_focus(d) {
@@ -2026,6 +2044,12 @@ $(function() {
         // redraw the graph
         forcegraph.draw();
     });
+
+    // Button to show topology color
+    $('#topology__toolbar__btn__colors').click(function() {
+        forcegraph.show_topology_colors();
+    });
+
 
 
     // Initialize classes
