@@ -174,23 +174,23 @@ var SDNTrace = function() {
         Callback to be used with the AJAX that retrieve switch ports.
         */
 
-        $('#sdn-trace-form-switch-hidden').val(dpid);
-        $('#sdn-trace-form-switch-port-hidden').val('');
-        $('#sdn-trace-form-switch-ports-content select').html('');
+        $('#sdn_trace_form__switch-hidden').val(dpid);
+        $('#sdn_trace_form__switch-port-hidden').val('');
+        $('#sdn_trace_form__switch-ports-content select').html('');
 
-        $('#sdn-trace-form-switch-ports-content select').change(function() {
-            $('#sdn-trace-form-switch-port-hidden').val(this.value);
+        $('#sdn_trace_form__switch-ports-content select').change(function() {
+            $('#sdn_trace_form__switch-port-hidden').val(this.value);
         });
 
         $.each(port_data, function(index, value){
             $('<option/>', {
                 'value': this.port_no,
                 'text': this.port_no + " - " + this.name
-            }).appendTo('#sdn-trace-form-switch-ports-content select');
+            }).appendTo('#sdn_trace_form__switch-ports-content select');
 
             if (index == 1) {
                 // insert port
-                $('#sdn-trace-form-switch-port-hidden').val(this.port_no);
+                $('#sdn_trace_form__switch-port-hidden').val(this.port_no);
             }
         });
     }
@@ -204,8 +204,8 @@ var SDNTrace = function() {
         layer2.trace = new Object();
 
         layer2.trace.switch = new Object();
-        layer2.trace.switch.dpid = $('#sdn-trace-form-switch-hidden').val();
-        layer2.trace.switch.in_port = $('#sdn-trace-form-switch-port-hidden').val();
+        layer2.trace.switch.dpid = $('#sdn_trace_form__switch-hidden').val();
+        layer2.trace.switch.in_port = $('#sdn_trace_form__switch-port-hidden').val();
         if (layer2.trace.switch.in_port) {
             layer2.trace.switch.in_port = parseInt(layer2.trace.switch.in_port, 10);
         }
@@ -236,8 +236,8 @@ var SDNTrace = function() {
         layer3.trace = new Object();
 
         layer3.trace.switch = new Object();
-        layer3.trace.switch.dpid = $('#sdn-trace-form-switch-hidden').val();
-        layer3.trace.switch.in_port = $('#sdn-trace-form-switch-port-hidden').val();
+        layer3.trace.switch.dpid = $('#sdn_trace_form__switch-hidden').val();
+        layer3.trace.switch.in_port = $('#sdn_trace_form__switch-port-hidden').val();
         if (layer3.trace.switch.in_port) {
             layer3.trace.switch.in_port = parseInt(layer3.trace.switch.in_port, 10);
         }
@@ -276,8 +276,8 @@ var SDNTrace = function() {
         layerfull.trace = new Object();
 
         layerfull.trace.switch = new Object();
-        layerfull.trace.switch.dpid = $('#sdn-trace-form-switch-hidden').val();
-        layerfull.trace.switch.in_port = $('#sdn-trace-form-switch-port-hidden').val();
+        layerfull.trace.switch.dpid = $('#sdn_trace_form__switch-hidden').val();
+        layerfull.trace.switch.in_port = $('#sdn_trace_form__switch-port-hidden').val();
         if (layerfull.trace.switch.in_port) {
             layerfull.trace.switch.in_port = parseInt(layerfull.trace.switch.in_port, 10);
         }
@@ -369,6 +369,8 @@ var SDNTrace = function() {
     }
     // Stop trace thread and block all variables.
     this.trace_stop = function() {
+        console.log('TRACE STOP');
+
         clearTimeout(_thread_trace_listener);
 
         _thread_trace_listener = "";
@@ -383,6 +385,8 @@ var SDNTrace = function() {
     var debug_timeout_trace_trigger_counter = 0;
 
     this._flag_call_trace_listener_again = true;
+    this._flag_call_trace_listener_again_counter = 0;
+
     this.call_trace_listener = function(trace_id) {
         var html_render = function(jsonObj) {
             /**
@@ -394,6 +398,7 @@ var SDNTrace = function() {
             html_content += "<strong>Start from:</strong>";
             html_content += "</div>";
             if(jsonObj.result) {
+                // TODO workaround for multiple starting type
                 for (var i = 0, len = jsonObj.result.length; i < len; i++) {
                     if (jsonObj.result[i].type == REST_TRACE_TYPE.STARTING) {
                         html_content += "<div class='col-sm-5'>";
@@ -428,7 +433,6 @@ var SDNTrace = function() {
                         html_content += "<tr data-type="+ jsonObj.result[i].type +">";
                         html_content += "<td>" + (i) + "</td>";
                     }
-
                     if (jsonObj.result[i].type == REST_TRACE_TYPE.TRACE) {
                         html_content += "<td>" + jsonObj.result[i].dpid + "</td>";
                         html_content += "<td>" + jsonObj.result[i].port + "</td>";
@@ -436,9 +440,6 @@ var SDNTrace = function() {
                     } else if (jsonObj.result[i].type == REST_TRACE_TYPE.INTERTRACE) {
                         html_content += "<td colspan='3'><strong>Interdomain: " + jsonObj.result[i].domain + "</strong></td>";
                     } else if (jsonObj.result[i].type == REST_TRACE_TYPE.LAST) {
-                        // FLAG to stop the trigger loop
-                        sdntrace._flag_call_trace_listener_again = false;
-
                         html_content += "<td colspan='3'>";
                         if (jsonObj.result[i].reason == REST_TRACE_REASON.ERROR) {
                             html_content += "<span class='trace_result_item_error'>Error: ";
@@ -457,9 +458,6 @@ var SDNTrace = function() {
                         }
                         html_content += "</td>";
                     } else if (jsonObj.result[i].type == REST_TRACE_TYPE.ERROR) {
-                        // FLAG to stop the trigger loop
-                        sdntrace._flag_call_trace_listener_again = false;
-
                         html_content += "<td colspan='3'>" + jsonObj.result[i].message + "</td>";
                     }
                     html_content += "</tr>";
@@ -548,6 +546,17 @@ var SDNTrace = function() {
 
                     var last_result_item = jsonObj.result[jsonObj.result.length - 1];
                     if (last_result_item.type == REST_TRACE_TYPE.LAST) {
+                        console.log('sdntrace._flag_call_trace_listener_again_counter = ' + sdntrace._flag_call_trace_listener_again_counter);
+                        // FLAG to stop the trigger loop
+                        if (sdntrace._flag_call_trace_listener_again_counter < 4) {
+                            sdntrace._flag_call_trace_listener_again_counter = sdntrace._flag_call_trace_listener_again_counter + 1;
+                        } else {
+                            console.log('type last');
+                            // stop the interval loop
+                            sdntrace.trace_stop();
+                        }
+                    } else if (last_result_item.type == REST_TRACE_TYPE.ERROR) {
+                        console.log('type error');
                         // stop the interval loop
                         sdntrace.trace_stop();
                     }
@@ -600,7 +609,7 @@ var SDNTrace = function() {
 
         } else {
             var jqxhr = $.ajax({
-                url:"/sdntrace/trace/" + trace_id.request_id,
+                url:"/sdntrace/trace/" + trace_id.request_id + "?q=" + Math.random(),
                 type: 'GET',
                 dataType: 'json',
                 crossdomain:true
@@ -665,7 +674,7 @@ $(function() {
     sdntrace = new SDNTrace();
 
     // Trace form modal
-    sdn_trace_form_dialog = $( "#sdn-trace-form" ).dialog({
+    sdn_trace_form_dialog = $( "#sdn_trace_form" ).dialog({
       autoOpen: false,
       height: 600,
       width: 750,

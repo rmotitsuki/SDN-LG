@@ -115,9 +115,10 @@ circle {
   stroke-width: 1.5px;
 }
 text {
-  font: 10px sans-serif;
+  font: 11px sans-serif;
   pointer-events: none;
-  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+  text-shadow: 0 1px 0 #ddd, 1px 0 0 #ddd, 0 -1px 0 #ddd, -1px 0 0 #ddd;
+  font-weight: bold;
 }
 .target-label,
 .source-label,
@@ -152,18 +153,6 @@ text {
 .col_fixed_960 > .panel-body {
     width: 100%;
     height:100%;
-}
-
-.col_offset_960{
-    /*
-    padding-left:960px;
-    height:600px;
-    */
-}
-#canvas_info_body .panel {
-    /*
-    height:600px;
-    */
 }
 
 .svg-container {
@@ -266,17 +255,17 @@ text {
 .ui-dialog {
     z-index: 1000;
 }
-#sdn-trace-form {
+#sdn_trace_form {
     width: 100%;
 }
-#sdn-trace-form .row {
+#sdn_trace_form .row {
     margin: 0;
 }
-#sdn-trace-form-ports-filter-row.row,
-#sdn-trace-form-switch-filter-row.row {
+#sdn_trace_form__ports-filter-row.row,
+#sdn_trace_form__switch-filter-row.row {
     margin-top: 10px;
 }
-#sdn-trace-form-row-forms {
+#sdn_trace_form__row-forms {
     overflow: hidden;
 }
 
@@ -291,9 +280,6 @@ text {
   display:none;
   float:right;
 }
-
-
-
 
 
 .navbar-inverse .navbar-toggle-always {

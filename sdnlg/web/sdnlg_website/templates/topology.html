@@ -88,7 +88,7 @@ jQuery(function($) {
                         <div id="topology__canvas"></div>
                     </div>
                 </div>
-                <div id="canvas_info" class="col_offset_960">
+                <div id="canvas_info">
                     <div id="canvas_info_body">
                         <div id="domain_panel_info" style="display:none;" class="panel panel-default">
                           <div class="panel-heading">
@@ -210,21 +210,21 @@ jQuery(function($) {
 
 
 <!-- Trace forms -->
-<div id="sdn-trace-form">
-    <div id="sdn-trace-form-switch-filter-row" class="row">
+<div id="sdn_trace_form">
+    <div id="sdn_trace_form__switch-filter-row" class="row">
         <!-- Switches list -->
-        <input type="hidden" name="sdn-trace-form-switch-hidden" id="sdn-trace-form-switch-hidden" >
+        <input type="hidden" name="sdn_trace_form__switch-hidden" id="sdn_trace_form__switch-hidden" >
         <div class="col-md-2"><label>Switch:</label></div>
-        <div id="sdn-trace-form-switch-content" class="col-md-10"></div>
+        <div id="sdn_trace_form__switch-content" class="col-md-10"></div>
     </div>
-    <div id="sdn-trace-form-ports-filter-row" class="row">
+    <div id="sdn_trace_form__ports-filter-row" class="row">
         <!-- Ports list -->
-        <input type="hidden" name="sdn-trace-form-switch-port-hidden" id="sdn-trace-form-switch-port-hidden" >
+        <input type="hidden" name="sdn_trace_form__switch-port-hidden" id="sdn_trace_form__switch-port-hidden" >
         <div class="col-md-2"><label>Ports:</label></div>
-        <div id="sdn-trace-form-switch-ports-content" class="col-md-10"><select class="form-control"></select></div>
+        <div id="sdn_trace_form__switch-ports-content" class="col-md-10"><select class="form-control"></select></div>
     </div>
     <hr />
-    <div id="sdn-trace-form-row-forms" class="row">
+    <div id="sdn_trace_form__row-forms" class="row">
         <div class="col-md-12 form-horizontal">
             <!-- Nav tabs -->
             <ul class="nav nav-tabs" role="tablist"><li role="presentation" class="active"><a href="#trace-layer-2" aria-controls="trace-layer-2" role="tab" data-toggle="tab">Trace Layer 2</a></li>

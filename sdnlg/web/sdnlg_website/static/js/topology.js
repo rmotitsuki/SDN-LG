@@ -153,16 +153,17 @@ var ForceGraph = function(p_selector, p_data) {
                 },
                 disabled: true
             },
-            {
-                title: 'Interfaces (' + data.data.n_ports + ')',
-                action: function(elm, d, i) {
-                    sdntopology.call_get_switch_ports(d.dpid, sdntopology._render_html_popup_ports);
-                }
-            },
-            {
-                title: 'Total traffic: 000',
-                action: function() {}
-            },
+// TODO: Expecting new info services
+//            {
+//                title: 'Interfaces (' + data.data.n_ports + ')',
+//                action: function(elm, d, i) {
+//                    sdntopology.call_get_switch_ports(d.dpid, sdntopology._render_html_popup_ports);
+//                }
+//            },
+//            {
+//                title: 'Total traffic: 000',
+//                action: function() {}
+//            },
             {
                 title: 'Trace',
                 action: function(elm, d, i) {
@@ -365,7 +366,7 @@ var ForceGraph = function(p_selector, p_data) {
         path.style("opacity", 1)
             .style("stroke", function(o) { return sdncolor.LINK_COLOR[o.type]; });
         text.style("opacity", 1)
-            .style("font-weight", "normal");;
+            .style("font-weight", "bold");
     }
 
 
@@ -428,8 +429,12 @@ var ForceGraph = function(p_selector, p_data) {
     function set_domain_focus(d) {
         // Set data info panel
         if(d && d.data) {
-            $('#port_panel_info').hide();
+            // hide switch info
             $('#switch_to_panel_info').hide();
+            // hide port info
+            $('#port_panel_info').hide();
+
+            // show domain info
             _set_domain_focus_panel_data(d);
             $('#domain_panel_info_collapse').collapse("show");
         }
@@ -548,6 +553,14 @@ var ForceGraph = function(p_selector, p_data) {
     this.draw = function() {
         force.stop();
 
+        // Check to know if two nodes are connected
+        for (var x in _data.links) {
+            console.log(_data.links[x]);
+            if (!isConnected(_data.links[x].source, _data.links[x].target)) {
+                addConnection(_data.links[x].source, _data.links[x].target);
+            }
+        }
+
         // draw link paths
         path = path.data(_data.links, function(d) { return d.id; });
         path.exit().remove();
@@ -594,7 +607,6 @@ var ForceGraph = function(p_selector, p_data) {
                 .attr("id", function(d) { return "node-" + d.id; })
                 .attr("r", function(d) { return SIZE[d.type]||nominal_base_node_size; })
                 .attr("fill", function(d) { return d.background_color; })
-                .style(tocolor, function(d) { return d.background_color; })
                 .attr("class", function(d) {
                     if (d.type == 'port') { return " node node_port"; }
                     return "node";
@@ -639,13 +651,6 @@ var ForceGraph = function(p_selector, p_data) {
                     .on("drag", _nodeDragged)
                     .on("end", _nodeDragended))
                 .merge(node);
-
-    	var tocolor = "fill";
-        var towhite = "stroke";
-        if (outline) {
-            tocolor = "stroke"
-            towhite = "fill"
-        }
 
         // draw switch label
         text = text.data(_data.nodes, function(d) { return d.id;});
@@ -753,6 +758,16 @@ var SDNTopology = function() {
     this.topology = [];
     // topology domains
     this.domains = []
+
+    // topology check by index
+    var _linkedByIndex = new Map();
+
+	function isConnected(a, b) {
+	    /**
+	    * Check if node a and node b are connected.
+	    */
+        return _linkedByIndex.has(a.id + "-" + b.id) || _linkedByIndex.has(b.id + "-" + a.id) || a.id == b.id;
+    }
 
     /**
      * Call ajax to load the switch list.
@@ -911,8 +926,7 @@ var SDNTopology = function() {
     this.get_node_by_id = function(p_id) {
         /**
         Get node by id.
-        If it is a switch, the id is the dpid.
-        Domain is the domain name.
+        Returns Switch and Domain
         */
         // add to topology list to render the html
         for (var key in sdntopology.switches) {
@@ -920,9 +934,10 @@ var SDNTopology = function() {
                 return sdntopology.switches[key];
             }
         }
+        //
         for (var key in sdntopology.domains) {
-            if (sdntopology.switches[key].id == p_id) {
-                return sdntopology.switches[key];
+            if (sdntopology.domains[key].id == p_id) {
+                return sdntopology.domains[key];
             }
         }
     }
@@ -931,8 +946,26 @@ var SDNTopology = function() {
     * Use this function instead of access the topology attribute.
     */
     this.add_topology = function(link) {
-        // add to topology list to render the html
-        this.topology.push(link);
+        if (isConnected(link.node1, link.node2) == false) {
+            _linkedByIndex.set(link.node1 + "-" + link.node2, true);
+            // add to topology list to render the html
+            this.topology.push(link);
+        }
+    }
+    /**
+    * Use this function to get the topology link object
+    */
+    this.get_topology_link = function(node1, node2) {
+        if (isConnected(node1, node2)) {
+            for (var x in this.topology) {
+                if ((this.topology[x].node1.id == node1.id && this.topology[x].node2.id == node2.id) ||
+                   (this.topology[x].node1.id == node2.id && this.topology[x].node2.id == node1.id)) {
+
+                    return this.topology[x];
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -1035,14 +1068,34 @@ var SDNTopology = function() {
                             var linkObj = new Link();
 
                             // creating switch
-                            var node1_port = sdntopology.get_node_by_id(dpid1).get_port_by_id(dpid1, port1);
-                            linkObj.node1 = new Switch(dpid1);
-                            linkObj.node1.ports = [node1_port];
+                            var switch1 = sdntopology.get_node_by_id(dpid1);
+                            var switch2 = sdntopology.get_node_by_id(dpid2);
 
-                            // creating switch ports
-                            var node2_port = sdntopology.get_node_by_id(dpid2).get_port_by_id(dpid2, port2);
-                            linkObj.node2 = new Switch(dpid2);
-                            linkObj.node2.ports = [node2_port];
+                            if(isConnected(switch1, switch2)) {
+                                console.log('is linked');
+                                linkObj = sdntopology.get_topology_link(switch1, switch2);
+                            } else {
+                                console.log('new link');
+                                linkObj.node1 = switch1;
+                                linkObj.node2 = switch2;
+
+                                linkObj.node1.ports = [];
+                                linkObj.node2.ports = [];
+                            }
+                            console.log(linkObj);
+                            // creating switch ports from node1
+                            var node1_port = linkObj.node1.get_port_by_id(dpid1, port1);
+                            if (node1_port == null) {
+                                node1_port = new Port(dpid1, port1, port1, port1);
+                                linkObj.node1.ports.push(node1_port);
+                            }
+
+                            // creating switch ports from node2
+                            var node2_port = linkObj.node2.get_port_by_id(dpid2, port2);
+                            if (node2_port == null) {
+                                node2_port = new Port(dpid2, port2, port2, port2);
+                                linkObj.node2.ports.push(node2_port);
+                            }
 
                             // link speed
                             if(node1_port && node1_port.speed) {
@@ -1076,12 +1129,11 @@ var SDNTopology = function() {
                             if (typeof(p_neighbor.domain_name)!=='undefined') {
                                 _domain_label = p_neighbor.domain_name;
                             }
-                            _id = _domain_label.replace(" ", "_");
 
                             // add node data do d3
-                            var domain_obj = d3lib.add_new_node_domain(_id, _domain_label);
-                            var linkObj = new Link();
+                            var domain_obj = d3lib.add_new_node_domain(_domain_label, _domain_label);
 
+                            var linkObj = new Link();
                             linkObj.node1 = sdntopology.get_node_by_id(dpid1);
                             linkObj.node2 = domain_obj;
                         }
@@ -1229,9 +1281,6 @@ var SDNTopology = function() {
         }
     }
 
-
-
-
     this._render_html_popup_ports = function(dpid, jsonObj) {
         /**
         Callback to be used with the AJAX that retrieve switch ports.
@@ -1359,7 +1408,7 @@ var SDNTopology = function() {
      */
     this.show_trace_form = function(d) {
         // setting switch label
-        $('#sdn-trace-form-switch-content').html(d.label + " - " + d.dpid);
+        $('#sdn_trace_form__switch-content').html(d.label + " - " + d.dpid);
 
 //        sdntopology.call_get_switch_ports(d.dpid, sdntrace._render_html_trace_form_ports);
         sdntopology.call_sdntrace_get_switch_ports(d.dpid, sdntrace._render_html_trace_form_ports);
@@ -1395,16 +1444,6 @@ var Link = function() {
  * Switch representation.
  */
 var Switch = function(switch_id) {
-/*
-"datapath_id": "00004af7b0f68749",
-"switch_color": "char",
-"tcp_port": integer,
-"openflow_version": "string",
-"switch_vendor": "string",
-"ip_address": "ip_address",
-"switch_name": "string",
-"number_flows": integer
-*/
     this.id = switch_id;
     this.dpid = switch_id; // datapath_id
 
@@ -1557,6 +1596,19 @@ var Domain = function(domain_id, label) {
         return this.label;
     }
 }
+Domain.create_id = function(p_domain_name) {
+    /**
+    * Create an Domain ID based on the domain_name.
+    */
+    if (node_id == null || node_id == "") {
+        console.log("[ERROR] Domain.create_id p_domain_name is empty.");
+        throw "[ERROR] Domain.create_id p_domain_name is empty.";
+    }
+
+    var domain_id = p_domain_name.replace(" ", "_");
+
+    return "domain_" + domain_id;
+}
 
 /**
  * Host representation.
@@ -1577,17 +1629,17 @@ var Host = function(node_id, port_id, label) {
     }
 }
 Host.create_id = function(node_id, port_id) {
-        if (node_id == null || node_id == "") {
-            console.log("[ERROR] Host.create_id node_id empty.");
-            throw "[ERROR] Host.create_id node_id empty.";
-        }
-        if (port_id == null || port_id == "") {
-            console.log("[ERROR] Host.create_id port_id empty.");
-            throw "[ERROR] Host.create_id port_id empty.";
-        }
-
-        return "host_" + node_id + "_" + port_id;
+    if (node_id == null || node_id == "") {
+        console.log("[ERROR] Host.create_id node_id empty.");
+        throw "[ERROR] Host.create_id node_id empty.";
     }
+    if (port_id == null || port_id == "") {
+        console.log("[ERROR] Host.create_id port_id empty.");
+        throw "[ERROR] Host.create_id port_id empty.";
+    }
+
+    return "host_" + node_id + "_" + port_id;
+}
 
 // Return switch port id if the class is used with strings
 Port.prototype.toString = function(){ return this.id; };
@@ -1835,10 +1887,12 @@ var D3JS = function() {
     }
 
     this.add_new_node_domain = function(id=null, label="") {
+        var domain_id = Domain.create_id(id);
+
         if(this.nodes) {
             for (y = 0; y < this.nodes.length; y++) {
-                if(this.nodes[y].id == id) {
-                    console.log('NODE ALREADY HERE!!!! ' + id)
+                if(this.nodes[y].id == domain_id) {
+                    console.log('NODE ALREADY HERE!!!! ' + domain_id)
                     // do nothing
                     return this.nodes[y];
                 }
@@ -1847,11 +1901,7 @@ var D3JS = function() {
             this.nodes = [];
         }
 
-        var _id = "";
-        if (id) {
-            _id = id.replace(" ", "_");
-        }
-        var domain_obj = new Domain(_id);
+        var domain_obj = new Domain(domain_id);
         domain_obj.label = label;
 
         sdntopology.domains.push(domain_obj);
@@ -1967,10 +2017,6 @@ $(function() {
             $('.speed-label').show();
         }
     });
-
-//    $('#topology__toolbar__btn__add_node').click(function() {
-//        //d3lib.add_new_node_domain();
-//    });
 
     // Button to clear trace elements
     $('#topology__toolbar__btn__clear_trace').click(function() {
