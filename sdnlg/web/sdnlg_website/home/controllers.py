@@ -10,3 +10,8 @@ def index():
 @home_blueprint.route('/topology/')
 def topology():
     return render_template('topology.html')
+
+
+@home_blueprint.route('/dashboard/')
+def dashboard():
+    return render_template('base.html')

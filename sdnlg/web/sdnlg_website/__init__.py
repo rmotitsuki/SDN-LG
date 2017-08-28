@@ -1,7 +1,8 @@
-import configparser
+#import configparser
 from flask import Flask
 from .home.controllers import home_blueprint
 from .home.restful import restful_blueprint
+from .home.endpoints import dash_blueprint
 
 # Register Flas blueprints
 app = Flask(__name__,
@@ -9,3 +10,4 @@ app = Flask(__name__,
 
 app.register_blueprint(home_blueprint)
 app.register_blueprint(restful_blueprint)
+app.register_blueprint(dash_blueprint)

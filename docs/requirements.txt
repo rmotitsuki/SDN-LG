@@ -8,4 +8,5 @@ pydispatch
 ryu
 six
 flask_restful
+flask-jsondash
 PyDispatcher
