@@ -1,23 +1,20 @@
 {% extends "layout.html" %}
 {% block head %}
   {{ super() }}
-    <script src="{{ url_for('static', filename='js/topology.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/debug.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/domain.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sdnflowtable.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/d3topology.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/topologycolor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/topologykytos.js') }}"></script>
     <script src="{{ url_for('static', filename='js/trace.js') }}"></script>
     <link href="{{ url_for('static', filename='css/topology.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/trace.css') }}" rel="stylesheet">
-    <script src="{{ url_for('static', filename='jslib/jquery.splitter.js') }}"></script>
-    <link href="{{ url_for('static', filename='jslib/jquery.splitter.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/vendor/jquery.splitter.js') }}"></script>
+    <link href="{{ url_for('static', filename='css/vendor/jquery.splitter.css') }}" rel="stylesheet">
 {% endblock %}
 {% block body %}
 <script>
-jQuery(function($) {
-    console.log('jquery start');
-    var splitter = $('#splitter__div').height(700).split({
-        orientation: 'vertical',
-        limit: 10,
-        position: '75%', // if there is no percentage it interpret it as pixels
-    });
-});
 
 
 </script>
@@ -43,25 +40,25 @@ jQuery(function($) {
                 <div class="collapse" id="topology__toolbar_buttons" style="position:absolute;z-index:100">
                   <ul class="nav nav-tabs">
                       <li><button type="button" id="topology__toolbar__btn__label__link"
-                      class="btn btn-primary" data-toggle="button"
+                      class="btn btn-primary btn-sm" data-toggle="button"
                       aria-pressed="false" autocomplete="off" aria-label="Link"
                       title="Toggle link labels visibility">
                         Toggle ports
                       </button></li>
                       <li><button type="button" id="topology__toolbar__btn__label__speed"
-                      class="btn btn-primary" data-toggle="button"
+                      class="btn btn-primary btn-sm" data-toggle="button"
                       aria-pressed="false" autocomplete="off" aria-label="Link"
                       title="Toggle link speed labels visibility">
                         Toggle speed
                       </button></li>
                       <li><button type="button" id="topology__toolbar__btn__clear_trace"
-                      class="btn btn-primary" data-toggle="button"
+                      class="btn btn-primary btn-sm" data-toggle="button"
                       aria-pressed="false" autocomplete="off" aria-label="Link"
                       title="Clear trace">
                         Clear trace
                       </button></li>
                       <li><button type="button" id="topology__toolbar__btn__colors"
-                      class="btn btn-primary" data-toggle="button"
+                      class="btn btn-primary btn-sm" data-toggle="button"
                       aria-pressed="false" autocomplete="off" aria-label="Link"
                       title="Show topology colors">
                         Show topology color

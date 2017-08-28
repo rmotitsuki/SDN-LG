@@ -51,7 +51,17 @@
 /* topology */
 /* topology panel parent div */
 #topology__frame {
-    margin: 2em;
+    margin: 0;
+}
+#topology__frame > div {
+    margin: 0;
+    padding: 0;
+}
+
+#topology__toolbar {
+    position: absolute;
+    left: 0;
+    top: 0;
 }
 #topology__toolbar .btn-primary {
   background-color: rgb(148, 179, 206);
@@ -64,6 +74,16 @@
 #topology__toolbar_menu_button {
     margin: 0;
     border-color: #aaa;
+    padding: 0.4em;
+}
+
+#topology__toolbar_buttons {
+    left: 0;
+    color: #333;
+    background-color: #f5f5f5;
+    border: 1px #ddd solid;
+    padding: 0.5em 0 0 0.5em;
+
 }
 /* toolbar menu button to toggle the menu itens. Inside bars */
 #topology__toolbar_buttons li {
@@ -76,7 +96,8 @@
 }
 
 #topology__frame h3 {
-    margin-top: 10px;
+    margin-top: 5px;
+    padding: 0;
 }
 
 /* d3 canvas svg */
@@ -269,6 +290,12 @@ text {
     overflow: hidden;
 }
 
+/* Splitter bar between topology and info panels */
+#splitter__div .vsplitter {
+    /* width: 0.2em; */
+    margin-left: 1em;
+}
+
 #port_panel_info_collapse > div > div > ul > li > span:nth-child(1),
 #switch_panel_info_collapse > div > div > ul > li > span:nth-child(1) {
     font-weight: bold;
@@ -296,8 +323,8 @@ text {
 .navbar-toggle-always {
   position: relative;
   float: right;
-  margin-right: 15px;
   padding: 9px 10px;
+  margin-right: 15px;
   margin-top: 8px;
   margin-bottom: 8px;
   background-color: transparent;
@@ -313,11 +340,10 @@ text {
 .navbar-toggle-always .icon-bar {
   display: block;
   width: 22px;
-  height: 2px;
-  border-radius: 1px;
+  height: 1px;
 }
 .navbar-toggle-always .icon-bar + .icon-bar {
-  margin-top: 4px;
+  margin-top: 3px;
 }
 @media (min-width: 768px) {
   .navbar-toggle-always {
@@ -332,13 +358,12 @@ text {
   }
 }
 .navbar-toggle-always .icon-bar-always {
-  width: 22px;
-  height: 2px;
+  width: 18px;
+  height: 1px;
   border: 1px solid #fff;
   display: block;
-  border-radius: 1px;
 }
 .navbar-toggle-always .icon-bar-always + .icon-bar-always {
-  margin-top: 4px;
+  margin-top: 3px;
 }
 

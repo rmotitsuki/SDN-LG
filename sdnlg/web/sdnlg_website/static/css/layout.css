@@ -17,6 +17,13 @@ body > div.box > nav > div {
     margin-left: 2em;
     margin-left: 2em;
 }
+.navbar .container {
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-left: 2px;
+}
+
+
 #header__logo {
     float:left;
 }
