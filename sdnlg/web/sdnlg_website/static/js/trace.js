@@ -1,5 +1,5 @@
 
-/* global DEBUG, forcegraph, MOCK, SDNLG_CONF, d3lib */
+/* global forcegraph, MOCK, SDNLG_CONF, d3lib */
 
 // reference to the trace form dialog
 var sdn_trace_form_dialog = '';
@@ -64,33 +64,27 @@ var SDNTrace = function() {
         $('#trace_panel_info .loading-icon-div').show();
 
         // AJAX call
-        if (DEBUG) {
-            json = MOCK.JSON_TRACE;
-            var jsonobj = $.parseJSON(json);
-            ajaxDone(jsonobj);
-        } else {
-            $.ajax({
-                url: SDNLG_CONF.trace_server + "/sdntrace/trace",
-                type: 'PUT',
-                contentType: 'application/json',
-                data: json_data
-            })
-            .done(function(json) {
-                ajaxDone(json);
-            })
-            .fail(function(responseObj) {
-                if (responseObj.responseJSON) {
-                    $('#trace-result-content').html("<div class='bg-danger'>"+responseObj.responseJSON.error+"</div>");
-                } else {
-                    $('#trace-result-content').html("<div class='bg-danger'>Trace error.</div>");
-                }
-                _self.traceStop();
-                console.warn("call_trace_request_id ajax error" );
-            })
-            .always(function() {
-                $('#trace_panel_info').show();
-            });
-        }
+        $.ajax({
+            url: SDNLG_CONF.trace_server + "/sdntrace/trace",
+            type: 'PUT',
+            contentType: 'application/json',
+            data: json_data
+        })
+        .done(function(json) {
+            ajaxDone(json);
+        })
+        .fail(function(responseObj) {
+            if (responseObj.responseJSON) {
+                $('#trace-result-content').html("<div class='bg-danger'>"+responseObj.responseJSON.error+"</div>");
+            } else {
+                $('#trace-result-content').html("<div class='bg-danger'>Trace error.</div>");
+            }
+            _self.traceStop();
+            console.warn("call_trace_request_id ajax error" );
+        })
+        .always(function() {
+            $('#trace_panel_info').show();
+        });
     };
 
     this.renderHtmlTraceFormPorts = function(dpid, port_data) {
@@ -314,9 +308,6 @@ var SDNTrace = function() {
         $('#trace_panel_info .loading-icon-div').hide();
     };
 
-    var debugTraceTriggerCounter = 10;
-    var debugTimeoutTraceTriggerCounter = 0;
-
     var _flagCallTraceListenerAgain = true;
 
     this.callTraceListener = function(traceId) {
@@ -326,26 +317,27 @@ var SDNTrace = function() {
             */
             var htmlContent = "";
             htmlContent += "<div class='row'>";
-            htmlContent += "<div class='col-sm-4'>";
+            htmlContent += "<div class='col-sm-12'>";
             htmlContent += "<strong>Start from:</strong>";
-            htmlContent += "</div>";
             if(jsonObj.result) {
                 // FIXME workaround for multiple starting type
                 var _flag_multiple_starting_counter = 0;
                 for (var i = 0, len = jsonObj.result.length; i < len; i++) {
                     if (jsonObj.result[i].type === REST_TRACE_TYPE.STARTING && (_flag_multiple_starting_counter === 0)) {
-                        htmlContent += "<div class='col-sm-5'>";
+                        htmlContent += "<span> <strong>DPID:</strong> ";
                         htmlContent += jsonObj.result[i].dpid;
-                        htmlContent += "</div><div class='col-sm-3'>";
+                        htmlContent += "</span><span> <strong>Port:</strong>";
                         htmlContent += jsonObj.result[i].port;
-                        htmlContent += "</div>";
+                        htmlContent += "</span>";
 
                         _flag_multiple_starting_counter++;
                     }
                 }
             } else {
-                htmlContent += "<div class='col-sm-8'>---</div>";
+                htmlContent += " <span>---</span>";
             }
+
+            htmlContent += "</div>";
             htmlContent += "</div>";
 
             htmlContent += "<div class='row'><div class='col-sm-12'>";
@@ -525,54 +517,24 @@ var SDNTrace = function() {
         }
 
         // AJAX call
-        if (DEBUG) {
-            var json = "";
-            debugTraceTriggerCounter = debugTraceTriggerCounter + 1;
-
-            if (debugTraceTriggerCounter === 1) { json = MOCK.JSON_TRACE_RESULT_PART1; }
-            else if (debugTraceTriggerCounter === 2) { json = MOCK.JSON_TRACE_RESULT_PART2; }
-            else if (debugTraceTriggerCounter === 3) { json = MOCK.JSON_TRACE_RESULT_PART3; }
-            else if (debugTraceTriggerCounter === 4) {
-                 debugTimeoutTraceTriggerCounter = debugTimeoutTraceTriggerCounter + 1;
-
-                 if (debugTimeoutTraceTriggerCounter === 1) { json = MOCK.JSON_TRACE_RESULT_PART4; }
-                 else if (debugTimeoutTraceTriggerCounter === 2) { json = MOCK.JSON_TRACE_RESULT_PART4_ERROR; }
-                 else if (debugTimeoutTraceTriggerCounter === 3) { json = MOCK.JSON_TRACE_RESULT_PART4_LOOP; }
-                 else {
-                    json = MOCK.JSON_TRACE_RESULT_PART4;
-                    debugTimeoutTraceTriggerCounter = 0;
-                 }
-            } else if (debugTraceTriggerCounter === 5) {
-                debugTraceTriggerCounter = 1;
-                json = MOCK.JSON_TRACE_RESULT_PART1;
-            } else if (debugTraceTriggerCounter > 5) {
-                json = MOCK.JSON_TRACE_RESULT_INTERDOMAIN;
-                debugTraceTriggerCounter = 0;
-            }
-
-            var jsonobj = $.parseJSON(json);
-            ajaxDone(jsonobj);
-
-        } else {
-            $.ajax({
-                url: SDNLG_CONF.trace_server + "/sdntrace/trace/" + traceId + "?q=" + Math.random(),
-                type: 'GET',
-                dataType: 'json',
-                crossdomain:true
-            })
-            .done(function(json) {
-                ajaxDone(json);
-                console.log('call_trace_listener  ajax done');
-            })
-            .fail(function() {
-                console.warn("call_trace_listener ajax error" );
-                // Stop trace
-                _self.traceStop();
-            })
-            .always(function() {
-                console.log( "call_trace_listener ajax complete" );
-            });
-        }
+        $.ajax({
+            url: SDNLG_CONF.trace_server + "/sdntrace/trace/" + traceId + "?q=" + Math.random(),
+            type: 'GET',
+            dataType: 'json',
+            crossdomain:true
+        })
+        .done(function(json) {
+            ajaxDone(json);
+            console.log('call_trace_listener  ajax done');
+        })
+        .fail(function() {
+            console.warn("call_trace_listener ajax error" );
+            // Stop trace
+            _self.traceStop();
+        })
+        .always(function() {
+            console.log( "call_trace_listener ajax complete" );
+        });
 
         if (_flagCallTraceListenerAgain) {
             _threadTraceListener = setTimeout(_self.callTraceListener, _traceTimerTriggerCall, traceId);
@@ -604,6 +566,9 @@ $(function() {
     // Trace form click events to submit forms
     $('#layer2_btn').click(function() {
         var jsonStr = sdntrace.buildTraceLayer2JSON();
+
+
+
         sdntrace.callTraceRequestId(jsonStr);
     });
     $('#layer3_btn').click(function() {
