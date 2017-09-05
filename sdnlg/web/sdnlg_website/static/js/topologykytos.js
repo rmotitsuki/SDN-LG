@@ -47,9 +47,9 @@ var SDNTopology = function() {
                 var switch_obj = new Switch(json_node.dpid);
                 _self.switches.push(switch_obj);
 
-                _self.sdntraceGetSwitchInfo(jsonObj, json_node.dpid);
+                _self.sdntraceGetSwitchInfo(jsonObj, json_node);
 
-                //_self.callSdntraceGetSwitchFlows(jsonObj[x]);
+                _self.callSdntraceGetSwitchFlows(json_node, json_node.dpid);
             }
 
             if (json_node.type === "host") {
@@ -67,30 +67,37 @@ var SDNTopology = function() {
         _self.switches = _self.switches.sort();
         // deduplication
         _self.switches = arrayRemoveDuplicates(_self.switches);
-
-        console.log(_self.switches);
-
     };
 
-    this.sdntraceGetSwitchInfo = function(jsonObj, p_dpid) {
-        var switch_obj = _self.get_node_by_id(p_dpid);
+    this.sdntraceGetSwitchInfo = function(jsonObj, jsonNode) {
+        var switch_obj = _self.get_node_by_id(jsonNode.dpid);
 
 //        switch_obj.n_ports = jsonObj.n_ports;
 //        switch_obj.n_tables = jsonObj.n_tables;
 //
 //        switch_obj.name = jsonObj.switch_name;
 //        switch_obj.switch_color = jsonObj.switch_color;
-//        switch_obj.tcp_port = jsonObj.tcp_port;
-        switch_obj.openflow_version = jsonObj.ofp_version;
-        switch_obj.switch_vendor = jsonObj.manufacturer;
-        switch_obj.ip_address = jsonObj.connection;
-        //switch_obj.number_flows = jsonObj.number_flows;
+        switch_obj.ip_address = jsonNode.connection;
+        switch_obj.openflow_version = jsonNode.ofp_version;
+        switch_obj.switch_vendor = jsonNode.manufacturer;
 
-        _self.sdntraceGetSwitchPorts(jsonObj, p_dpid);
+        if(jsonNode.connection && jsonNode.connection.length > 0) {
+            var patt = new RegExp("(.*){1}:([0-9]*$)");
+            var res = patt.exec(jsonNode.connection);
+            switch_obj.ip_address = res[1];
+            switch_obj.tcp_port = res[2];
+            //switch_obj.number_flows = jsonObj.number_flows;
+        }
+
+        _self.sdntraceGetSwitchPorts(jsonObj, jsonNode.dpid);
     };
     
     this.callSdntraceGetSwitchFlows = function(jsonObj, p_dpid, callback=null) {
         var ajax_done = function(jsonObj, p_callback) {
+
+            console.log('callSdntraceGetSwitchFlows ajax_done');
+            console.log(jsonObj);
+
             var switch_obj = _self.get_node_by_id(p_dpid);
 
             switch_obj.number_flows = jsonObj.number_flows;
@@ -99,8 +106,8 @@ var SDNTopology = function() {
             switch_obj.flow_stat.dpid = p_dpid;
             switch_obj.flow_stat.flows = [];
 
-            for(var x in jsonObj.flows) {
-                var jsonFlow = jsonObj.flows[x];
+            for(var x in jsonObj.data) {
+                var jsonFlow = jsonObj.data[x];
 
                 var flowObj = {};
                 flowObj.idle_timeout = jsonFlow.idle_timeout;
@@ -126,6 +133,7 @@ var SDNTopology = function() {
                 }
 
                 flowObj.match = {};
+                /*
                 flowObj.match.wildcards = jsonFlow.match.wildcards;
                 flowObj.match.in_port = jsonFlow.match.in_port;
                 flowObj.match.dl_vlan = jsonFlow.match.dl_vlan;
@@ -133,14 +141,16 @@ var SDNTopology = function() {
                 flowObj.match.dl_dst = jsonFlow.match.dl_dst;
                 flowObj.match.dl_type = jsonFlow.match.dl_type;
 
+                */
+
                 switch_obj.flow_stat.flows.push(flowObj);
             }
 
             switch_obj.flow_pivot = [];
 
 
-            for(var x in jsonObj.flows) {
-                var jsonFlow = jsonObj.flows[x];
+            for(var x in jsonObj.data) {
+                var jsonFlow = jsonObj.data[x];
 
                 var pivot = {};
                 pivot.dpid = p_dpid;
@@ -156,12 +166,12 @@ var SDNTopology = function() {
 
                 pivot.table_id = jsonFlow.table_id || '';
 
-                pivot.match__wildcards = jsonFlow.match.wildcards || '';
-                pivot.match__in_port = jsonFlow.match.in_port || ' ';
-                pivot.match__dl_vlan = jsonFlow.match.dl_vlan || '';
-                pivot.match__dl_src = jsonFlow.match.dl_src || '';
-                pivot.match__dl_dst = jsonFlow.match.dl_dst || '';
-                pivot.match__dl_type = jsonFlow.match.dl_type || '';
+//                pivot.match__wildcards = jsonFlow.match.wildcards || '';
+//                pivot.match__in_port = jsonFlow.match.in_port || ' ';
+//                pivot.match__dl_vlan = jsonFlow.match.dl_vlan || '';
+//                pivot.match__dl_src = jsonFlow.match.dl_src || '';
+//                pivot.match__dl_dst = jsonFlow.match.dl_dst || '';
+//                pivot.match__dl_type = jsonFlow.match.dl_type || '';
 
                 if (jsonFlow.actions) {
                     for(var y in jsonFlow.actions) {
@@ -192,29 +202,27 @@ var SDNTopology = function() {
                     throw err;
                 }
             }
+
+            console.log('End pivot');
+            console.log(switch_obj);
         };
 
         // AJAX call
-        if (DEBUG) {
-            json = MOCK.JSON_FLOWS;
-            var jsonobj = $.parseJSON(json);
-            ajax_done(jsonobj, callback);
-        } else {
-            $.ajax({
-                url:"/sdntrace/switches/" + p_dpid + "/flows",
-                dataType: 'json',
-                crossdomain:true
-            })
-            .done(function(json) {
-                ajax_done(json, callback);
-            })
-            .fail(function() {
-                console.log( "callSdntraceGetSwitchFlows ajax error" );
-            })
-            .always(function() {
-                console.log( "callSdntraceGetSwitchFlows ajax complete" );
-            });
-        }
+        $.ajax({
+            //url:"/sdntrace/switches/" + p_dpid + "/flows",
+            url:"/kytos/stats/" + p_dpid + "/flows",
+            dataType: 'json',
+            crossdomain:true
+        })
+        .done(function(json) {
+            ajax_done(json, callback);
+        })
+        .fail(function() {
+            console.log( "callSdntraceGetSwitchFlows ajax error" );
+        })
+        .always(function() {
+            console.log( "callSdntraceGetSwitchFlows ajax complete" );
+        });
     };
 
     /**
@@ -225,15 +233,15 @@ var SDNTopology = function() {
      */
     this.get_node_by_id = function(p_id) {
         // add to topology list to render the html
-        for (var key in this.switches) {
-            if (this.switches[key].id === p_id) {
-                return this.switches[key];
+        for (var key in _self.switches) {
+            if (_self.switches[key].id === p_id) {
+                return _self.switches[key];
             }
         }
         
-        for (var key in this.domains) {
-            if (this.domains[key].id === p_id) {
-                return this.domains[key];
+        for (var key in _self.domains) {
+            if (_self.domains[key].id === p_id) {
+                return _self.domains[key];
             }
         }
     };
@@ -328,15 +336,8 @@ var SDNTopology = function() {
                         var _switch1 = _self.get_node_by_id(dpid1);
                         var _switch2 = _self.get_node_by_id(dpid2);
 
-                        console.log('_switch2');
-                        console.log(dpid2);
-                        console.log(_switch2);
-
-
                         var switch1 = Switch.clone_obj(_switch1);
                         var switch2 = Switch.clone_obj(_switch2);
-
-
 
                         if(isTopologyConnected(switch1, switch2)) {
                             //linkObj = _self.get_topology_link(switch1, switch2);
@@ -350,8 +351,6 @@ var SDNTopology = function() {
 
                             // creating switch ports from node1
                             var node1_port = _switch1.get_port_by_id(dpid1, port1);
-                            console.log(_switch1);
-                            console.log(node1_port);
                             if (node1_port === null) {
                                 node1_port = new Port(dpid1, port1, port1, port1);
                                 linkObj.node1.ports.push(node1_port);
@@ -421,13 +420,10 @@ var SDNTopology = function() {
                         linkObj.label1 = node1_port.label;
 
                         var host_obj = d3lib.addNewNodeHost(dpid1, port1, _host_label);
-                        console.log('host_obj');
-                        console.log(host_obj);
 
                         linkObj.node2 = host_obj;
 
                         // creating host ports
-
                         var node2_port = new Port(host_obj.id +'_'+ port2, port2, "");
 
                         linkObj.node2.ports = [node2_port];
@@ -463,7 +459,6 @@ var SDNTopology = function() {
                     // Add the node the the topology
                     if (linkObj) {
                         _self.add_topology(linkObj);
-                        console.log(linkObj);
                     }
                 }
 
@@ -474,25 +469,19 @@ var SDNTopology = function() {
         };
 
         // AJAX call
-        if (DEBUG) {
-            json = MOCK.JSON_TOPOLOGY_TRACE;
-            var jsonobj = $.parseJSON(json);
-            ajaxDone(jsonobj);
-        } else {
-            $.ajax({
-                url: "/kytos/topology",
-                dataType: 'json'
-            })
-            .done(function(json) {
-                ajaxDone(json);
-            })
-            .fail(function() {
-                console.log( "call_get_topology ajax error" );
-            })
-            .always(function() {
-                console.log( "call_get_topology ajax complete" );
-            });
-        }
+        $.ajax({
+            url: "/kytos/topology",
+            dataType: 'json'
+        })
+        .done(function(json) {
+            ajaxDone(json);
+        })
+        .fail(function() {
+            console.log( "call_get_topology ajax error" );
+        })
+        .always(function() {
+            console.log( "call_get_topology ajax complete" );
+        });
     };
 
     /**
@@ -516,25 +505,19 @@ var SDNTopology = function() {
         };
 
         // AJAX call
-        if (DEBUG) {
-            json = MOCK.JSON_SWITCH_PORTS;
-            var jsonobj = $.parseJSON(json);
-            ajaxDone(jsonobj);
-        } else {
-            $.ajax({
-                url: "/sdnlg/switches/" + dpid + "/ports",
-                dataType: 'json'
-            })
-            .done(function(json) {
-                ajaxDone(json);
-            })
-            .fail(function() {
-                console.log( "callGetSwitchPorts ajax error" );
-            })
-            .always(function() {
-                console.log( "callGetSwitchPorts ajax complete" );
-            });
-        }
+        $.ajax({
+            url: "/sdnlg/switches/" + dpid + "/ports",
+            dataType: 'json'
+        })
+        .done(function(json) {
+            ajaxDone(json);
+        })
+        .fail(function() {
+            console.log( "callGetSwitchPorts ajax error" );
+        })
+        .always(function() {
+            console.log( "callGetSwitchPorts ajax complete" );
+        });
     };
 
     /**
@@ -558,18 +541,13 @@ var SDNTopology = function() {
                         // create Port object and push to the switch ports
                         if (switchObj.ports === null) { switchObj.ports = []; }
                         switchObj.ports.push(portObj);
-
-                        console.log(portObj);
                     } else {
                         console.log('Found port ' + p_dpid + " _ " + p_port_data.port_number);
-                        console.log(portObj);
                     }
                     portObj.speed = p_port_data.speed;
                     portObj.label = p_port_data.name;
                     portObj.number = p_port_data.port_number;
                     //portObj.status = p_port_data.status;
-
-
                 }
             }
 

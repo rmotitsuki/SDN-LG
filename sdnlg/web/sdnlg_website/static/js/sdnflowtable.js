@@ -123,7 +123,7 @@ var SdnFlowTable = function() {
         });
     };
 
-    var SdnFlowTable = function(self) {
+    var sdnFlowTable = function(self) {
         _init_tabulator(self);
         _init_dialog(self);
     }(this);
