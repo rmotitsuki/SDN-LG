@@ -189,3 +189,6 @@ MOCK.JSON_TRACE_RESULT_PART4_LOOP = '{"total_time": "0:00:03.520170","start_time
     '{"time": "0:00:01.514501","type": "trace","port": "s4-eth2","dpid": "0000000000000004"},'+
     '{"msg": null,"reason": "loop","type": "last","time": "0:00:03.519943"}],'+
     '"request_id": 80001}';
+
+/** @constant */
+MOCK.JSON_TRACE_CONTROL_PLANE = '{"request_id": 30029, "result": [{"type": "starting", "dpid": "00:00:00:00:00:00:00:01", "port": 1, "time": "2017-09-06 15:26:19.532443"}, {"type": "trace", "dpid": "00:00:00:00:00:00:00:02", "port": 2, "time": "0:00:00.543983"}, {"type": "trace", "dpid": "00:00:00:00:00:00:00:03", "port": 2, "time": "0:00:01.082261"}, {"type": "trace", "dpid": "00:00:00:00:00:00:00:04", "port": 2, "time": "0:00:01.603984"}, {"type": "last", "reason": "done", "msg": "none", "time": "0:00:03.130488"}], "start_time": "2017-09-06 15:26:19.532443", "total_time": "0:00:03.131741", "request": {"trace": {"switch": {"dpid": "00:00:00:00:00:00:00:01", "in_port": 1}, "eth": {"dl_vlan": 100}}}}';

@@ -1,8 +1,6 @@
 
 /* global Switch, DEBUG, d3, d3lib, MOCK */
 
-
-
 var SDNTopology = function() {
     // switches list. It is used to help render the topology nodes.
     this.switches = [];
@@ -21,8 +19,8 @@ var SDNTopology = function() {
      * @param {type} nodeA Source node
      * @param {type} nodeB Target node
      */
-    var addTopologyConnection = function(nodeA, nodeB) {
-        _linkedByIndex.set(nodeA.id + "-" + nodeB.id, true);
+    var addTopologyConnection = function(nodeA, nodeB, prefix_id="") {
+        _linkedByIndex.set((prefix_id||"") + nodeA.id + "-" + nodeB.id, true);
     };
     
     /**
@@ -31,9 +29,9 @@ var SDNTopology = function() {
      * @param {type} nodeB
      * @returns {Boolean}
      */
-    var isTopologyConnected = function(nodeA, nodeB) {
-        return _linkedByIndex.has(nodeA.id + "-" + nodeB.id) ||
-               _linkedByIndex.has(nodeB.id + "-" + nodeA.id) || 
+    var isTopologyConnected = function(nodeA, nodeB, prefix_id="") {
+        return _linkedByIndex.has((prefix_id||"") + nodeA.id + "-" + nodeB.id) ||
+               _linkedByIndex.has((prefix_id||"") + nodeB.id + "-" + nodeA.id) ||
                nodeA.id === nodeB.id;
     };
 
@@ -94,10 +92,6 @@ var SDNTopology = function() {
     
     this.callSdntraceGetSwitchFlows = function(jsonObj, p_dpid, callback=null) {
         var ajax_done = function(jsonObj, p_callback) {
-
-            console.log('callSdntraceGetSwitchFlows ajax_done');
-            console.log(jsonObj);
-
             var switch_obj = _self.get_node_by_id(p_dpid);
 
             switch_obj.number_flows = jsonObj.number_flows;
@@ -114,9 +108,9 @@ var SDNTopology = function() {
                 flowObj.cookie = jsonFlow.cookie;
                 flowObj.priority = jsonFlow.priority;
                 flowObj.hard_timeout = jsonFlow.hard_timeout;
-                flowObj.byte_count = jsonFlow.byte_count;
-                flowObj.duration_nsec = jsonFlow.duration_nsec;
-                flowObj.packet_count= jsonFlow.packet_count;
+                flowObj.byte_count = jsonFlow.stats.Bps;
+//                flowObj.duration_nsec = jsonFlow.duration_nsec;
+                flowObj.packet_count= jsonFlow.stats.pps;
                 flowObj.duration_sec = jsonFlow.duration_sec;
                 flowObj.table_id = jsonFlow.table_id;
 
@@ -140,8 +134,12 @@ var SDNTopology = function() {
                 flowObj.match.dl_src = jsonFlow.match.dl_src;
                 flowObj.match.dl_dst = jsonFlow.match.dl_dst;
                 flowObj.match.dl_type = jsonFlow.match.dl_type;
-
                 */
+                flowObj.match.in_port = jsonFlow.in_port;
+                flowObj.match.dl_vlan = jsonFlow.dl_vlan;
+                flowObj.match.dl_src = jsonFlow.dl_src;
+                flowObj.match.dl_dst = jsonFlow.dl_dst;
+                flowObj.match.dl_type = jsonFlow.dl_type;
 
                 switch_obj.flow_stat.flows.push(flowObj);
             }
@@ -159,19 +157,19 @@ var SDNTopology = function() {
                 pivot.cookie = jsonFlow.cookie;
                 pivot.priority = jsonFlow.priority;
                 pivot.hard_timeout = jsonFlow.hard_timeout;
-                pivot.byte_count = jsonFlow.byte_count;
+                pivot.byte_count = jsonFlow.stats.Bps;
                 //pivot.duration_nsec = jsonFlow.duration_nsec;
-                pivot.packet_count= jsonFlow.packet_count;
+                pivot.packet_count= jsonFlow.stats.pps;
                 pivot.duration_sec = jsonFlow.duration_sec + (jsonFlow.duration_nsec / 1000000000.0);
 
                 pivot.table_id = jsonFlow.table_id || '';
 
 //                pivot.match__wildcards = jsonFlow.match.wildcards || '';
-//                pivot.match__in_port = jsonFlow.match.in_port || ' ';
-//                pivot.match__dl_vlan = jsonFlow.match.dl_vlan || '';
-//                pivot.match__dl_src = jsonFlow.match.dl_src || '';
-//                pivot.match__dl_dst = jsonFlow.match.dl_dst || '';
-//                pivot.match__dl_type = jsonFlow.match.dl_type || '';
+                pivot.match__in_port = jsonFlow.in_port || ' ';
+                pivot.match__dl_vlan = jsonFlow.dl_vlan || '';
+                pivot.match__dl_src = jsonFlow.dl_src || '';
+                pivot.match__dl_dst = jsonFlow.dl_dst || '';
+                pivot.match__dl_type = jsonFlow.dl_type || '';
 
                 if (jsonFlow.actions) {
                     for(var y in jsonFlow.actions) {
@@ -202,14 +200,10 @@ var SDNTopology = function() {
                     throw err;
                 }
             }
-
-            console.log('End pivot');
-            console.log(switch_obj);
         };
 
         // AJAX call
         $.ajax({
-            //url:"/sdntrace/switches/" + p_dpid + "/flows",
             url:"/kytos/stats/" + p_dpid + "/flows",
             dataType: 'json',
             crossdomain:true
@@ -251,8 +245,8 @@ var SDNTopology = function() {
     * @param {Link} link Link object
     */
     this.add_topology = function(link) {
-        if (isTopologyConnected(link.node1, link.node2) === false) {
-            addTopologyConnection(link.node1, link.node2);
+        if (isTopologyConnected(link.node1, link.node2, link.prefix_id) === false) {
+            addTopologyConnection(link.node1, link.node2, link.prefix_id);
             // add to topology list to render the html
             this.topology.push(link);
         }
@@ -266,8 +260,8 @@ var SDNTopology = function() {
     * @param {Node} node2 Node object
     * @returns {Link} Link object
     */
-    this.get_topology_link = function(node1, node2) {
-        if (isTopologyConnected(node1, node2)) {
+    this.get_topology_link = function(node1, node2, prefix) {
+        if (isTopologyConnected(node1, node2, prefix)) {
             for (var x in this.topology) {
                 if ((this.topology[x].node1.id === node1.id && this.topology[x].node2.id === node2.id) ||
                    (this.topology[x].node1.id === node2.id && this.topology[x].node2.id === node1.id)) {
@@ -328,9 +322,7 @@ var SDNTopology = function() {
                             port2 = res[2];
                         }
 
-
                         var linkObj = new Link();
-
 
                         // creating switch
                         var _switch1 = _self.get_node_by_id(dpid1);

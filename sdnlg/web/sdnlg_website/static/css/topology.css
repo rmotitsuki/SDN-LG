@@ -131,6 +131,21 @@ rect.node  {
 .link-large {
   stroke-width: 10px;
 }
+.link-path {
+/*
+  stroke-dasharray: 5,5;
+  stroke-dashoffset: 0;
+*/
+}
+/* Link path control plane trace  */
+.link-trace-cp {
+  stroke-dasharray: 5,5;
+  stroke-dashoffset: 5;
+  stroke: rgb(52, 136, 42);
+  stroke-width: 0.2em;
+}
+
+
 circle {
   stroke: #333;
   stroke-width: 1.5px;

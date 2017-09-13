@@ -1,17 +1,117 @@
 
 /* global forcegraph, MOCK, SDNLG_CONF, d3lib */
 
+/** @constant */
+var REST_TRACE_TYPE = {'STARTING':'starting', 'LAST':'last', 'TRACE':'trace', 'INTERTRACE':'intertrace'};
+/** @constant */
+var REST_TRACE_REASON = {'ERROR':'error', 'DONE':'done', 'LOOP':'loop'};
+
+
+var SDNTraceUtil = function() {
+    this.tracePanelHtml = function(jsonObj) {
+        /**
+        * Render trace result html info.
+        */
+        var htmlContent = "";
+        htmlContent += "<div class='row'>";
+        htmlContent += "<div class='col-sm-12'>";
+        htmlContent += "<strong>Start from:</strong>";
+        if(jsonObj.result) {
+            // FIXME workaround for multiple starting type
+            var _flag_multiple_starting_counter = 0;
+            for (var i = 0, len = jsonObj.result.length; i < len; i++) {
+                if (jsonObj.result[i].type === REST_TRACE_TYPE.STARTING && (_flag_multiple_starting_counter === 0)) {
+                    htmlContent += "<span> <strong>DPID:</strong> ";
+                    htmlContent += jsonObj.result[i].dpid;
+                    htmlContent += "</span><span> <strong>Port:</strong>";
+                    htmlContent += jsonObj.result[i].port;
+                    htmlContent += "</span>";
+
+                    _flag_multiple_starting_counter++;
+                }
+            }
+        } else {
+            htmlContent += " <span>---</span>";
+        }
+
+        htmlContent += "</div>";
+        htmlContent += "</div>";
+
+        htmlContent += "<div class='row'><div class='col-sm-12'>";
+        htmlContent += "<strong>Start time: </strong>" + (jsonObj.start_time || "---");
+        htmlContent += "</div></div>";
+
+        htmlContent += "<div class='row'><div class='col-sm-12'>";
+        htmlContent += "<strong>Total time: </strong>" + (jsonObj.total_time || "---");
+        htmlContent += "</div></div>";
+        if(jsonObj.result) {
+            htmlContent += "<hr>";
+            htmlContent += "<div class='col-sm-12'>";
+            htmlContent += "<table class='table table-striped'>";
+            htmlContent += "<thead><tr><th></th><th>Switch/DPID</th><th>Incoming Port</th><th>Time</th></tr></thead>";
+            htmlContent += "<tbody>";
+
+            var _flag_multiple_starting_counter = 0;
+            for (var i = 0, len = jsonObj.result.length; i < len; i++) {
+
+                // FIXME: workaround for multiple starting type
+                if (jsonObj.result[i].type !== REST_TRACE_TYPE.STARTING || (jsonObj.result[i].type === REST_TRACE_TYPE.STARTING && _flag_multiple_starting_counter > 0)) {
+                    htmlContent += "<tr data-type="+ jsonObj.result[i].type +">";
+                    htmlContent += "<td>" + (i) + "</td>";
+                }
+
+                // FIXME: workaround for multiple starting type
+                if (jsonObj.result[i].type === REST_TRACE_TYPE.STARTING && (_flag_multiple_starting_counter === 0)) {
+                    _flag_multiple_starting_counter = _flag_multiple_starting_counter + 1;
+                // FIXME: workaround for multiple starting type
+                } else if ((jsonObj.result[i].type === REST_TRACE_TYPE.STARTING && _flag_multiple_starting_counter > 0) || jsonObj.result[i].type === REST_TRACE_TYPE.TRACE) {
+                    htmlContent += "<td>" + jsonObj.result[i].dpid + "</td>";
+                    htmlContent += "<td>" + jsonObj.result[i].port + "</td>";
+                    htmlContent += "<td>" + jsonObj.result[i].time + "</td>";
+                } else if (jsonObj.result[i].type === REST_TRACE_TYPE.INTERTRACE) {
+                    htmlContent += "<td colspan='3'><strong>Interdomain: " + jsonObj.result[i].domain + "</strong></td>";
+                } else if (jsonObj.result[i].type === REST_TRACE_TYPE.LAST) {
+                    htmlContent += "<td colspan='3'>";
+                    if (jsonObj.result[i].reason === REST_TRACE_REASON.ERROR) {
+                        htmlContent += "<span class='trace_result_item_error'>Error: ";
+                        htmlContent += jsonObj.result[i].msg || "";
+                        htmlContent += "</span>";
+                    } else if (jsonObj.result[i].reason === REST_TRACE_REASON.DONE) {
+                        htmlContent += "<span class='trace_result_item_done'>Trace completed. ";
+                        if (jsonObj.result[i].msg !== 'none') {
+                            htmlContent += jsonObj.result[i].msg || "";
+                        }
+                        htmlContent += "</span>";
+                    } else if (jsonObj.result[i].reason === REST_TRACE_REASON.LOOP) {
+                        htmlContent += "<span class='trace_result_item_loop'>Trace completed with loop. ";
+                        htmlContent += jsonObj.result[i].msg || "";
+                        htmlContent += "</span>";
+                    }
+                    htmlContent += "</td>";
+                } else if (jsonObj.result[i].type === REST_TRACE_TYPE.ERROR) {
+                    htmlContent += "<td colspan='3'>" + jsonObj.result[i].message + "</td>";
+                }
+                htmlContent += "</tr>";
+            }
+
+            htmlContent += "</tbody></table></div>";
+        }
+        htmlContent += "</div>";
+
+        return htmlContent;
+    };
+};
+var sdntraceutil = new SDNTraceUtil();
+
+
+
 // reference to the trace form dialog
 var sdn_trace_form_dialog = '';
 
 var sdntrace = '';
 
 var SDNTrace = function() {
-    /** @constant */
-    var REST_TRACE_TYPE = {'STARTING':'starting', 'LAST':'last', 'TRACE':'trace', 'INTERTRACE':'intertrace'};
-    /** @constant */
-    var REST_TRACE_REASON = {'ERROR':'error', 'DONE':'done', 'LOOP':'loop'};
-    
+
     var _self = this;
 
     // last trace id executing
@@ -31,6 +131,7 @@ var SDNTrace = function() {
         // clear d3 graph trace classes
         $("path").removeClass("node-trace-active");
         $("line").removeClass("link-trace-active");
+        $("line").removeClass("link-trace-cp");
         $("path").each(function() {
             if ($(this).attr("data-nodeid")) {
             }
@@ -41,6 +142,16 @@ var SDNTrace = function() {
 
         $('#trace_panel_info').hide();
     };
+
+
+    this.highlightPath = function(selector) {
+        /**
+        * Highlight path. Receive selector var.
+        */
+        $(selector).addClass("new-link link-trace-active");
+    };
+
+
 
     this.callTraceRequestId = function(json_data) {
         /**
@@ -316,90 +427,7 @@ var SDNTrace = function() {
             * Render trace result html info.
             */
             var htmlContent = "";
-            htmlContent += "<div class='row'>";
-            htmlContent += "<div class='col-sm-12'>";
-            htmlContent += "<strong>Start from:</strong>";
-            if(jsonObj.result) {
-                // FIXME workaround for multiple starting type
-                var _flag_multiple_starting_counter = 0;
-                for (var i = 0, len = jsonObj.result.length; i < len; i++) {
-                    if (jsonObj.result[i].type === REST_TRACE_TYPE.STARTING && (_flag_multiple_starting_counter === 0)) {
-                        htmlContent += "<span> <strong>DPID:</strong> ";
-                        htmlContent += jsonObj.result[i].dpid;
-                        htmlContent += "</span><span> <strong>Port:</strong>";
-                        htmlContent += jsonObj.result[i].port;
-                        htmlContent += "</span>";
-
-                        _flag_multiple_starting_counter++;
-                    }
-                }
-            } else {
-                htmlContent += " <span>---</span>";
-            }
-
-            htmlContent += "</div>";
-            htmlContent += "</div>";
-
-            htmlContent += "<div class='row'><div class='col-sm-12'>";
-            htmlContent += "<strong>Start time: </strong>" + (jsonObj.start_time || "---");
-            htmlContent += "</div></div>";
-
-            htmlContent += "<div class='row'><div class='col-sm-12'>";
-            htmlContent += "<strong>Total time: </strong>" + (jsonObj.total_time || "---");
-            htmlContent += "</div></div>";
-            if(jsonObj.result) {
-                htmlContent += "<hr>";
-                htmlContent += "<div class='col-sm-12'>";
-                htmlContent += "<table class='table table-striped'>";
-                htmlContent += "<thead><tr><th></th><th>Switch/DPID</th><th>Incoming Port</th><th>Time</th></tr></thead>";
-                htmlContent += "<tbody>";
-
-                var _flag_multiple_starting_counter = 0;
-                for (var i = 0, len = jsonObj.result.length; i < len; i++) {
-
-                    // FIXME: workaround for multiple starting type
-                    if (jsonObj.result[i].type !== REST_TRACE_TYPE.STARTING || (jsonObj.result[i].type === REST_TRACE_TYPE.STARTING && _flag_multiple_starting_counter > 0)) {
-                        htmlContent += "<tr data-type="+ jsonObj.result[i].type +">";
-                        htmlContent += "<td>" + (i) + "</td>";
-                    }
-
-                    // FIXME: workaround for multiple starting type
-                    if (jsonObj.result[i].type === REST_TRACE_TYPE.STARTING && (_flag_multiple_starting_counter === 0)) {
-                        _flag_multiple_starting_counter = _flag_multiple_starting_counter + 1;
-                    // FIXME: workaround for multiple starting type
-                    } else if ((jsonObj.result[i].type === REST_TRACE_TYPE.STARTING && _flag_multiple_starting_counter > 0) || jsonObj.result[i].type === REST_TRACE_TYPE.TRACE) {
-                        htmlContent += "<td>" + jsonObj.result[i].dpid + "</td>";
-                        htmlContent += "<td>" + jsonObj.result[i].port + "</td>";
-                        htmlContent += "<td>" + jsonObj.result[i].time + "</td>";
-                    } else if (jsonObj.result[i].type === REST_TRACE_TYPE.INTERTRACE) {
-                        htmlContent += "<td colspan='3'><strong>Interdomain: " + jsonObj.result[i].domain + "</strong></td>";
-                    } else if (jsonObj.result[i].type === REST_TRACE_TYPE.LAST) {
-                        htmlContent += "<td colspan='3'>";
-                        if (jsonObj.result[i].reason === REST_TRACE_REASON.ERROR) {
-                            htmlContent += "<span class='trace_result_item_error'>Error: ";
-                            htmlContent += jsonObj.result[i].msg || "";
-                            htmlContent += "</span>";
-                        } else if (jsonObj.result[i].reason === REST_TRACE_REASON.DONE) {
-                            htmlContent += "<span class='trace_result_item_done'>Trace completed. ";
-                            if (jsonObj.result[i].msg !== 'none') {
-                                htmlContent += jsonObj.result[i].msg || "";
-                            }
-                            htmlContent += "</span>";
-                        } else if (jsonObj.result[i].reason === REST_TRACE_REASON.LOOP) {
-                            htmlContent += "<span class='trace_result_item_loop'>Trace completed with loop. ";
-                            htmlContent += jsonObj.result[i].msg || "";
-                            htmlContent += "</span>";
-                        }
-                        htmlContent += "</td>";
-                    } else if (jsonObj.result[i].type === REST_TRACE_TYPE.ERROR) {
-                        htmlContent += "<td colspan='3'>" + jsonObj.result[i].message + "</td>";
-                    }
-                    htmlContent += "</tr>";
-                }
-
-                htmlContent += "</tbody></table></div>";
-            }
-            htmlContent += "</div>";
+            htmlContent += sdntraceutil.tracePanelHtml(jsonObj);
 
             $('#trace-result-content').html(htmlContent);
             $('#trace_panel_info_collapse').collapse("show");
@@ -419,7 +447,8 @@ var SDNTrace = function() {
             Add html data selector after add a new link
             */
             var html_selector = "#link-" + _idFrom +"-"+ _idTo;
-            $(html_selector).addClass("new-link link-trace-active");
+            _self.highlightPath(html_selector);
+
             $(html_selector).attr("data-linkid", _idFrom +"-"+ _idTo);
         };
 
@@ -474,11 +503,12 @@ var SDNTrace = function() {
                         if (i > 0 && jsonObj.result[i-1].hasOwnProperty("dpid") && jsonObj.result[i].hasOwnProperty("dpid")) {
                             // Add new link between nodes
                             var css_selector = document.getElementById("link-" + jsonObj.result[i-1].dpid +"-"+ jsonObj.result[i].dpid);
-                            $(css_selector).addClass("new-link link-trace-active");
+                            _self.highlightPath(css_selector);
+
                             // Activate the return link too
 
                             css_selector = document.getElementById("link-" + jsonObj.result[i].dpid +"-"+ jsonObj.result[i-1].dpid);
-                            $(css_selector).addClass("new-link link-trace-active");
+                            _self.highlightPath(css_selector);
                         }
 
                         last_node_id = _id;
@@ -493,6 +523,8 @@ var SDNTrace = function() {
                             console.log('type last');
                             // stop the interval loop
                             _self.traceStop();
+
+                            sdntracecp.callTraceListener(traceId);
                         }
                     } else if (last_result_item.type === REST_TRACE_TYPE.ERROR) {
                         console.log('type error');
@@ -543,9 +575,183 @@ var SDNTrace = function() {
  }; // SDNTrace
 
 
+
+var sdntracecp = '';
+
+var SDNTraceCP = function() {
+    var _self = this;
+
+
+    this.highlightPath = function(selector) {
+        /**
+        * Highlight path. Receive selector var.
+        */
+        $(selector).addClass("new-link link-trace-cp");
+    };
+
+
+    this.triggerTraceListener = function(traceId) {
+        // show load icon
+        $('#trace_panel_info .loading-icon-div').show();
+
+        // Clearing the trace panel
+        $('#trace-result-content').html("");
+        $('#trace_panel_info_collapse').collapse("hide");
+
+        // Call to AJAX to retrieve the trace result
+        this.callTraceListener(traceId);
+    };
+
+
+    var _flagCallTraceListenerAgain = true;
+
+    this.callTraceListener = function(traceId) {
+        var htmlRender = function(jsonObj) {
+            /**
+            * Render trace result html info.
+            */
+            var htmlContent = "";
+            htmlContent += "<div class='row'>";
+            htmlContent += "<div class='col-sm-12'>";
+            htmlContent += "<strong>Trace Control Plane:</strong>";
+            htmlContent += "</div>";
+            htmlContent += "</div>";
+            htmlContent += sdntraceutil.tracePanelHtml(jsonObj);
+
+            $('#trace-cp-result-content').html(htmlContent);
+            $('#trace_cp_panel_info_collapse').collapse("show");
+        };
+
+        var _addNewHtmlNode = function(_id) {
+            /**
+            Add html data selector after add a new node
+            */
+            var html_selector = "#node-" + _id;
+            $(html_selector).addClass("new-node node-trace-active");
+            $(html_selector).attr("data-nodeid", _id);
+        };
+
+        var _addNewHtmlLink = function(_idFrom, _idTo) {
+            /**
+            Add html data selector after add a new link
+            */
+            var html_selector = "#link-CP" + _idFrom +"-"+ _idTo;
+            _self.highlightPath(html_selector);
+            $(html_selector).attr("data-linkid", _idFrom +"-"+ _idTo);
+        };
+
+        var ajaxDone = function(jsonObj) {
+            if (jsonObj && jsonObj === "0") {
+                return;
+            }
+
+            try {
+                console.log('Trace CP');
+                console.log(jsonObj);
+
+                if (jsonObj.result && jsonObj.result.length > 0) {
+                    var flag_has_domain = false;
+                    // temporary var to last node
+                    var last_node_id = null;
+                    // temporary var to last interdomain
+                    var last_domain_id = null;
+
+                    for (var i = 0, len = jsonObj.result.length; i < len; i++) {
+                        var result_item = jsonObj.result[i];
+                        var _id = null;
+
+                        if (result_item.hasOwnProperty("domain")) {
+                            // Add new domain node
+                            _label = result_item.domain;
+                            // add node data do d3
+                            var node_domain = d3lib.addNewNodeDomain(result_item.domain, _label);
+                            _id = node_domain.id;
+                            // add html data
+                            _addNewHtmlNode(_id);
+
+                            // Add new link
+                            d3lib.addNewLink(last_node_id, _id);
+                            _addNewHtmlLink(last_node_id, _id);
+
+                            flag_has_domain = true;
+                            last_domain_id = _id;
+                        }
+                        if (result_item.hasOwnProperty("dpid")) {
+                            _id = result_item.dpid;
+
+                            if (last_node_id == null) {
+                                last_node_id = _id;
+                            } else {
+//                            if (flag_has_domain) {
+//                                // Add new switch node related to new domain
+//                                d3lib.addNewNode(_id, "", last_domain_id);
+//                                _addNewHtmlNode(_id);
+//
+                                console.log("[TRACE CP] Add ne link.");
+
+
+                                // Add new link
+                                d3lib.addNewLink(last_node_id, _id, "CP");
+                                _addNewHtmlLink(last_node_id, _id, "CP");
+//                            }
+                                $(document.getElementById("node-" + _id)).addClass("node-trace-active");
+                            }
+                        }
+
+
+                        if (i > 0 && jsonObj.result[i-1].hasOwnProperty("dpid") && jsonObj.result[i].hasOwnProperty("dpid")) {
+                            // Add new link between nodes
+                            var css_selector = document.getElementById("link-CP" + jsonObj.result[i-1].dpid +"-"+ jsonObj.result[i].dpid);
+                            _self.highlightPath(css_selector);
+                            // Activate the return link too
+
+                            css_selector = document.getElementById("link-CP" + jsonObj.result[i].dpid +"-"+ jsonObj.result[i-1].dpid);
+                            _self.highlightPath(css_selector);
+                        }
+
+                        last_node_id = _id;
+                    }
+
+                }
+                htmlRender(jsonObj);
+            } catch(err) {
+                console.error(err);
+                throw err;
+            }
+        };
+
+        // AJAX call
+        $.ajax({
+            url: SDNLG_CONF.trace_server + "/sdntrace/trace/" + traceId + "?t=CP&q=" + Math.random(),
+            type: 'GET',
+            dataType: 'json',
+            crossdomain:true
+        })
+        .done(function(json) {
+            /* MOCK JSON RESPONSE */
+            var json_dump = MOCK.JSON_TRACE_CONTROL_PLANE;
+            var jsonobj = $.parseJSON(json_dump);
+
+            ajaxDone(jsonobj);
+            console.log('call_trace_listener  ajax done');
+        })
+        .fail(function() {
+            console.warn("call_trace_listener ajax error" );
+        })
+        .always(function() {
+            console.log( "call_trace_listener ajax complete" );
+        });
+
+    };
+ }; // SDNTrace Controle plane
+
+
+
+
 /* Initial load */
 $(function() {
     sdntrace = new SDNTrace();
+    sdntracecp = new SDNTraceCP();
 
     // Trace form modal
     sdn_trace_form_dialog = $( "#sdn_trace_form" ).dialog({
@@ -566,9 +772,6 @@ $(function() {
     // Trace form click events to submit forms
     $('#layer2_btn').click(function() {
         var jsonStr = sdntrace.buildTraceLayer2JSON();
-
-
-
         sdntrace.callTraceRequestId(jsonStr);
     });
     $('#layer3_btn').click(function() {

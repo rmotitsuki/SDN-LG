@@ -409,6 +409,7 @@ var ForceGraph = function(p_selector, p_data) {
         // animation to open panel
         $('#switch_panel_info_collapse').collapse("show");
         // fill html content
+
         $('#switch_panel_info_dpid_value').html(d.data.dpid);
         var name = d.data.getName();
         if (name && name.length > 0) {
@@ -547,6 +548,7 @@ var ForceGraph = function(p_selector, p_data) {
                         return "link-" + d.id;
                     })
                     .attr("class", function(d) {
+
                         var return_var = "";
                         if (d.speed >= SPEED_100GB) {
                             return_var = return_var + " link-path link-large";
@@ -555,10 +557,11 @@ var ForceGraph = function(p_selector, p_data) {
                         } else if (d.speed >= SPEED_1GB) {
                             return_var = return_var + " link-path link-thin";
                         }
-                        return_var = return_var + " link-path link " + d.type;
+                        return_var = return_var + " link-path link " + (d.type||"");
+
                         return return_var;
                     })
-                    .attr("marker-end", function(d) { return "url(#" + d.type + ")"; })
+                    .attr("marker-end", function(d) { return "url(#" + (d.type||"") + ")"; })
                     .style("stroke", function(d) {
                         if (d.edgetype === 's_p') {
                             return '#fff';
@@ -789,14 +792,14 @@ var D3JS = function() {
         return domain_obj;
     };
 
-    this.addNewLink = function(id_from, id_to, label="") {
-
+    this.addNewLink = function(id_from, id_to, prefix_id="", label="") {
         var node_from = sdntopology.get_node_by_id(id_from);
         var node_to = sdntopology.get_node_by_id(id_to);
 
-        var _link = sdntopology.get_topology_link(node_from, node_to);
+        var _link = sdntopology.get_topology_link(node_from, node_to, prefix_id);
+
         if (_link === null) {
-            _link = {node1: node_from , node2:node_to, label1:label, label2:label, speed:""};
+            _link = {node1: node_from , node2:node_to, prefix_id:prefix_id, label1:label, label2:label, speed:""};
 
             sdntopology.add_topology(_link);
 
@@ -912,6 +915,8 @@ var D3JS = function() {
 
         // verify topology to create edges
         for (var x = 0; x < sdntopology.topology.length; x++) {
+            var link_prefix_id = sdntopology.topology[x].prefix_id;
+
             var nodeFromId = sdntopology.topology[x].node1;
             var nodeToId = sdntopology.topology[x].node2;
 
@@ -926,11 +931,11 @@ var D3JS = function() {
             var source = _self.findNode(nodeFromId) || _self.nodes.push({id:nodeFromId, dpid:nodeFromId, name: nodeFromId});
             var target = _self.findNode(nodeToId) || _self.nodes.push({id:nodeToId, dpid:nodeToId, name: nodeToId});
 
-            var edgeId = source.id + "-" + target.id;
+            var edgeId = (link_prefix_id||"") + source.id + "-" + target.id;
             var sourceLabel = {name: labelFrom, num: labelNumberFrom};
             var targetLabel = {name: labelTo, num: labelNumberTo};
 
-            var edgeObj = {id:edgeId, name:x, source: source, target: target, source_label:sourceLabel, target_label:targetLabel, speed:speed};
+            var edgeObj = {id:edgeId, name:x, source: source, target: target, source_label:sourceLabel, target_label:targetLabel, speed:speed, prefix_id:link_prefix_id};
             edgeObj.color = sdncolor.LINK_COLOR['switch'];
 
             // Update current link instead of creating a new one

@@ -346,8 +346,8 @@ var SDNTopology = function() {
     * @param {Link} link Link object
     */
     this.add_topology = function(link) {
-        if (isTopologyConnected(link.node1, link.node2) === false) {
-            addTopologyConnection(link.node1, link.node2);
+        if (isTopologyConnected(link.node1, link.node2, link.prefix_id) === false) {
+            addTopologyConnection(link.node1, link.node2, link.prefix_id);
             // add to topology list to render the html
             this.topology.push(link);
         }
@@ -361,11 +361,11 @@ var SDNTopology = function() {
     * @param {Node} node2 Node object
     * @returns {Link} Link object
     */
-    this.get_topology_link = function(node1, node2) {
-        if (isTopologyConnected(node1, node2)) {
+    this.get_topology_link = function(node1, node2, prefix_id="") {
+        if (isTopologyConnected(node1, node2, prefix_id)) {
             for (var x in this.topology) {
-                if ((this.topology[x].node1.id === node1.id && this.topology[x].node2.id === node2.id) ||
-                   (this.topology[x].node1.id === node2.id && this.topology[x].node2.id === node1.id)) {
+                if ((this.topology[x].node1.id === node1.id && this.topology[x].node2.id === node2.id && this.topology[x].prefix_id === prefix_id ) ||
+                   (this.topology[x].node1.id === node2.id && this.topology[x].node2.id === node1.id && this.topology[x].prefix_id === prefix_id )) {
 
                     return this.topology[x];
                 }
