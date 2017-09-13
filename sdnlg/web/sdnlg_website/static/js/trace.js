@@ -524,7 +524,7 @@ var SDNTrace = function() {
                             // stop the interval loop
                             _self.traceStop();
 
-                            sdntracecp.callTraceListener(traceId);
+                            sdntracecp.triggerTraceListener(traceId);
                         }
                     } else if (last_result_item.type === REST_TRACE_TYPE.ERROR) {
                         console.log('type error');
@@ -592,11 +592,12 @@ var SDNTraceCP = function() {
 
     this.triggerTraceListener = function(traceId) {
         // show load icon
-        $('#trace_panel_info .loading-icon-div').show();
+        $('#trace_cp_panel_info').show();
+        $('#trace_cp_panel_info .loading-icon-div').show();
 
         // Clearing the trace panel
         $('#trace-result-content').html("");
-        $('#trace_panel_info_collapse').collapse("hide");
+        $('#trace_cp_panel_info_collapse').collapse("hide");
 
         // Call to AJAX to retrieve the trace result
         this.callTraceListener(traceId);
@@ -612,9 +613,6 @@ var SDNTraceCP = function() {
             */
             var htmlContent = "";
             htmlContent += "<div class='row'>";
-            htmlContent += "<div class='col-sm-12'>";
-            htmlContent += "<strong>Trace Control Plane:</strong>";
-            htmlContent += "</div>";
             htmlContent += "</div>";
             htmlContent += sdntraceutil.tracePanelHtml(jsonObj);
 
@@ -646,9 +644,6 @@ var SDNTraceCP = function() {
             }
 
             try {
-                console.log('Trace CP');
-                console.log(jsonObj);
-
                 if (jsonObj.result && jsonObj.result.length > 0) {
                     var flag_has_domain = false;
                     // temporary var to last node
@@ -740,6 +735,8 @@ var SDNTraceCP = function() {
         })
         .always(function() {
             console.log( "call_trace_listener ajax complete" );
+
+            $('#trace_cp_panel_info .loading-icon-div').hide();
         });
 
     };

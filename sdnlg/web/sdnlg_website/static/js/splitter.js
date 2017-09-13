@@ -15,6 +15,7 @@ var reset_right_pannel = function() {
     $('#switch_panel_info').hide();
     $('#port_panel_info').hide();
     $('#trace_panel_info').hide();
+    $('#trace_cp_panel_info').hide();
 };
 
 var show_right_pannel = function() {
