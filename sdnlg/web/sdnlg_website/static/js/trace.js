@@ -176,7 +176,7 @@ var SDNTrace = function() {
 
         // AJAX call
         $.ajax({
-            url: SDNLG_CONF.trace_server + "/sdntrace/trace",
+            url: "/api/amlight/sdntrace/trace",
             type: 'PUT',
             contentType: 'application/json',
             data: json_data
@@ -407,7 +407,6 @@ var SDNTrace = function() {
     
     // Stop trace thread and block all variables.
     this.traceStop = function() {
-        console.log('TRACE STOP');
 
         clearTimeout(_threadTraceListener);
 
@@ -550,7 +549,7 @@ var SDNTrace = function() {
 
         // AJAX call
         $.ajax({
-            url: SDNLG_CONF.trace_server + "/sdntrace/trace/" + traceId + "?q=" + Math.random(),
+            url: "/api/amlight/sdntrace/trace/" + traceId + "?q=" + Math.random(),
             type: 'GET',
             dataType: 'json',
             crossdomain:true
@@ -681,9 +680,6 @@ var SDNTraceCP = function() {
 //                                // Add new switch node related to new domain
 //                                d3lib.addNewNode(_id, "", last_domain_id);
 //                                _addNewHtmlNode(_id);
-//
-                                console.log("[TRACE CP] Add ne link.");
-
 
                                 // Add new link
                                 d3lib.addNewLink(last_node_id, _id, "CP");
@@ -717,7 +713,7 @@ var SDNTraceCP = function() {
 
         // AJAX call
         $.ajax({
-            url: SDNLG_CONF.trace_server + "/sdntrace/trace/" + traceId + "?t=CP&q=" + Math.random(),
+            url: "/api/amlight/sdntrace/trace/" + traceId + "?t=CP&q=" + Math.random(),
             type: 'GET',
             dataType: 'json',
             crossdomain:true

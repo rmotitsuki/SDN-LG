@@ -19,8 +19,6 @@ var reset_right_pannel = function() {
 };
 
 var show_right_pannel = function() {
-    console.log('show_right_pannel');
-    console.log(splitter.position());
     if (splitter.position() === splitter_initial_position) {
         splitter.settings.position = '70%';
         splitter.position('70%');

@@ -66,3 +66,7 @@ body > div.box > nav > div {
   display:none;
 }
 
+/* tabulator normalization */
+.tabulator .tabulator-tableHolder .tabulator-table .tabulator-row.tabulator-group span {
+  color: #1828a9;
+}

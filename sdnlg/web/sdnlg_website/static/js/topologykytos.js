@@ -92,9 +92,10 @@ var SDNTopology = function() {
     
     this.callSdntraceGetSwitchFlows = function(jsonObj, p_dpid, callback=null) {
         var ajax_done = function(jsonObj, p_callback) {
+
             var switch_obj = _self.get_node_by_id(p_dpid);
 
-            switch_obj.number_flows = jsonObj.number_flows;
+            switch_obj.number_flows = jsonObj.data.length || 0;
 
             switch_obj.flow_stat = {};
             switch_obj.flow_stat.dpid = p_dpid;
@@ -204,7 +205,7 @@ var SDNTopology = function() {
 
         // AJAX call
         $.ajax({
-            url:"/kytos/stats/" + p_dpid + "/flows",
+            url:"/api/kytos/of_stats/" + p_dpid + "/flows",
             dataType: 'json',
             crossdomain:true
         })
@@ -462,7 +463,7 @@ var SDNTopology = function() {
 
         // AJAX call
         $.ajax({
-            url: "/kytos/topology",
+            url: "/api/kytos/of_topology/topology",
             dataType: 'json'
         })
         .done(function(json) {
@@ -673,7 +674,12 @@ var SDNTopology = function() {
      */
     this.showTraceForm = function(d) {
         // setting switch label
-        $('#sdn_trace_form__switch-content').html(d.label + " - " + d.dpid);
+        var label = d.label;
+        if (d.dpid && d.dpid != d.label) {
+            label += " - " + d.dpid;
+        }
+
+        $('#sdn_trace_form__switch-content').html(label);
 
         //this.callSdntraceGetSwitchPorts(d.dpid, sdntrace.renderHtmlTraceFormPorts);
 

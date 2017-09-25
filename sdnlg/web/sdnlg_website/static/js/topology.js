@@ -194,6 +194,7 @@ var SDNTopology = function() {
     
     this.callSdntraceGetSwitchFlows = function(p_dpid, callback=null) {
         var ajax_done = function(jsonObj, p_callback) {
+
             var switch_obj = _self.get_node_by_id(p_dpid);
 
             switch_obj.number_flows = jsonObj.number_flows;
