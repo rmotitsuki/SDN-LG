@@ -207,11 +207,11 @@ var SdnFlowTable = function() {
             _createLi(htmlUL, 'Idle timeout', flowObj.idle_timeout);
             _createLi(htmlUL, 'Cookie', flowObj.cookie);
             _createLi(htmlUL, 'Priority', flowObj.priority);
-            _createLi(htmlUL, 'Hard timeout', flowObj.hard_timeout);
-            _createLi(htmlUL, 'Byte count', flowObj.byte_count);
-            _createLi(htmlUL, 'Duration (ns)', flowObj.duration_nsec);
-            _createLi(htmlUL, 'Packet count', flowObj.packet_count);
-            _createLi(htmlUL, 'Duration (s)', flowObj.duration_sec);
+            _createLi(htmlUL, 'Hard timeout', flowObj.hard_timeout || 0);
+            _createLi(htmlUL, 'Byte count', flowObj.byte_count || 0);
+            _createLi(htmlUL, 'Duration (ns)', flowObj.duration_nsec || 0);
+            _createLi(htmlUL, 'Packet count', flowObj.packet_count || 0);
+            _createLi(htmlUL, 'Duration (s)', flowObj.duration_sec || 0);
             _createLi(htmlUL, 'Table ID', flowObj.table_id);
 
             htmlUL = $('<ul></ul>');

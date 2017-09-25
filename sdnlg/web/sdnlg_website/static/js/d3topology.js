@@ -426,6 +426,8 @@ var ForceGraph = function(p_selector, p_data) {
             $('#switch_panel_info_flows').css('text-decoration', 'underline');
             $('#switch_panel_info_flows').click(function() {
                 sdnflowtable.setSwitchFlowPanelData(d.data.dpid, d.data.flow_stat);
+                sdnflowtable.setData(d.data.dpid, d.data.flow_pivot);
+                sdnflowtable.dialogOpen();
             });
         }
 
