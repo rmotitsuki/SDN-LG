@@ -140,7 +140,9 @@ var SDNTrace = function() {
         // close modal trace form
         sdn_trace_form_dialog.dialog( "close" );
 
+        // hide right panel data
         $('#trace_panel_info').hide();
+        $('#trace_cp_panel_info').hide();
     };
 
 

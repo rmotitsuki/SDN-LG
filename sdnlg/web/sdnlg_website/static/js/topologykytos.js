@@ -205,7 +205,7 @@ var SDNTopology = function() {
 
         // AJAX call
         $.ajax({
-            url:"/api/kytos/of_stats/" + p_dpid + "/flows",
+            url:"/api/legacy/of_stats/" + p_dpid + "/flows",
             dataType: 'json',
             crossdomain:true
         })
@@ -463,7 +463,7 @@ var SDNTopology = function() {
 
         // AJAX call
         $.ajax({
-            url: "/api/kytos/of_topology/topology",
+            url: "/api/legacy/of_topology/topology",
             dataType: 'json'
         })
         .done(function(json) {
@@ -674,9 +674,9 @@ var SDNTopology = function() {
      */
     this.showTraceForm = function(d) {
         // setting switch label
-        var label = d.label;
+        var label = d.dpid;
         if (d.dpid && d.dpid != d.label) {
-            label += " - " + d.dpid;
+            label += " - " + d.label;
         }
 
         $('#sdn_trace_form__switch-content').html(label);
