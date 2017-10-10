@@ -178,7 +178,7 @@ var SDNTrace = function() {
 
         // AJAX call
         $.ajax({
-            url: "/api/amlight/sdntrace/trace",
+            url: SDNLG_CONF.trace_server + "/sdntrace/trace",
             type: 'PUT',
             contentType: 'application/json',
             data: json_data
@@ -375,7 +375,7 @@ var SDNTrace = function() {
     };
     
 
-
+    var _flagCallTraceListenerAgain = true;
     // Timeout flag to stop the trace listener
     var _threadTraceListener = "";
     // Time to trigger the next call in ms
@@ -396,7 +396,7 @@ var SDNTrace = function() {
         $('#trace_panel_info_collapse').collapse("hide");
 
         // Call to AJAX to retrieve the trace result
-        this.callTraceListener(traceId);
+        _self.callTraceListener(traceId);
     };
 
     // Reset all variables to start the trace
@@ -420,7 +420,7 @@ var SDNTrace = function() {
         $('#trace_panel_info .loading-icon-div').hide();
     };
 
-    var _flagCallTraceListenerAgain = true;
+
 
     this.callTraceListener = function(traceId) {
         var htmlRender = function(jsonObj) {
@@ -524,8 +524,6 @@ var SDNTrace = function() {
                             console.log('type last');
                             // stop the interval loop
                             _self.traceStop();
-
-                            sdntracecp.triggerTraceListener(traceId);
                         }
                     } else if (last_result_item.type === REST_TRACE_TYPE.ERROR) {
                         console.log('type error');
@@ -551,7 +549,7 @@ var SDNTrace = function() {
 
         // AJAX call
         $.ajax({
-            url: "/api/amlight/sdntrace/trace/" + traceId + "?q=" + Math.random(),
+            url: SDNLG_CONF.trace_server + "/sdntrace/trace/" + traceId + "?q=" + Math.random(),
             type: 'GET',
             dataType: 'json',
             crossdomain:true
@@ -591,7 +589,88 @@ var SDNTraceCP = function() {
     };
 
 
+    this.callTraceRequestId = function(json_data) {
+        /**
+         * Call ajax to trace.
+         * Param:
+         *    json_data: Data in json String format to send as PUT method.
+         */
+
+        var ajaxDone = function(json) {
+
+
+            // Trigger AJAX to retrieve the trace result
+            var json_obj = $.parseJSON(json);
+            console.log('SDNTraceCP callTraceRequestId ajaxDone ' + json_obj.result.trace_id);
+            _self.triggerTraceListener(json_obj.result.trace_id);
+        };
+
+        // show loading icon
+        $('#trace_panel_info .loading-icon-div').show();
+
+        // AJAX call
+        $.ajax({
+            //url: "/api/amlight/sdntrace_cp/trace",
+            url: "/kytos/sdntrace_cp/trace",
+            type: 'PUT',
+            contentType: 'application/json',
+            data: json_data
+        })
+        .done(function(json) {
+            ajaxDone(json);
+        })
+        .fail(function(responseObj) {
+            if (responseObj.responseJSON) {
+                $('#trace-result-content').html("<div class='bg-danger'>"+responseObj.responseJSON.error+"</div>");
+            } else {
+                $('#trace-result-content').html("<div class='bg-danger'>Trace error.</div>");
+            }
+            console.warn("call_trace_request_id ajax error" );
+        })
+        .always(function() {
+            $('#trace_panel_info').show();
+        });
+    };
+
+
+
+    // Timeout flag to stop the trace listener
+    var _threadTraceListener = "";
+    // Time to trigger the next call in ms
+    var _traceTimerTriggerCall = 1000;
+    // Total time to trigger the call. After that trigger timeout method.
+    var _traceTimerMax = 30000;
+
+    var _traceTimerCounter = 0;
+
+
+    // Reset all variables to start the trace
+    this.traceReset = function() {
+        clearTimeout(_threadTraceListener);
+        _threadTraceListener = "";
+        _traceTimerCounter = 0;
+        _flagCallTraceListenerAgain = true;
+    };
+
+    // Stop trace thread and block all variables.
+    this.traceStop = function() {
+
+        clearTimeout(_threadTraceListener);
+
+        _threadTraceListener = "";
+        _traceTimerCounter = 100000;
+        _flagCallTraceListenerAgain = false;
+
+        // hide loading icon
+        $('#trace_panel_info .loading-icon-div').hide();
+    };
+
+    var _flagCallTraceListenerAgain = true;
+
+
     this.triggerTraceListener = function(traceId) {
+        console.log('SDNTraceCP triggerTraceListener ' + traceId);
+
         // show load icon
         $('#trace_cp_panel_info').show();
         $('#trace_cp_panel_info .loading-icon-div').show();
@@ -601,7 +680,7 @@ var SDNTraceCP = function() {
         $('#trace_cp_panel_info_collapse').collapse("hide");
 
         // Call to AJAX to retrieve the trace result
-        this.callTraceListener(traceId);
+        _self.callTraceListener(traceId);
     };
 
 
@@ -703,42 +782,79 @@ var SDNTraceCP = function() {
                         }
 
                         last_node_id = _id;
+
+
+                    console.log("trace result");
+                    console.log(jsonObj.result[jsonObj.result.length - 1]);
+
+                        var last_result_item = jsonObj.result[jsonObj.result.length - 1];
+                        if (last_result_item.type === REST_TRACE_TYPE.LAST) {
+                            // FLAG to stop the trigger loop
+                            if (_self._flagCallTraceListenerAgainCounter < 12) {
+                                _self._flagCallTraceListenerAgainCounter = _self._flagCallTraceListenerAgainCounter + 1;
+                            } else {
+                                console.log('type last');
+                                // stop the interval loop
+                                _self.traceStop();
+                            }
+                        } else if (last_result_item.type === REST_TRACE_TYPE.ERROR) {
+                            console.log('type error');
+                            // stop the interval loop
+                            _self.traceStop();
+                        }
+
                     }
 
                 }
                 htmlRender(jsonObj);
             } catch(err) {
                 console.error(err);
+                _self.traceStop();
                 throw err;
             }
         };
 
+
+        // counting the trace time elapsed
+        _traceTimerCounter = _traceTimerCounter + _traceTimerTriggerCall;
+
+        // Timeout. Stopping the trace.
+        if(_traceTimerCounter > _traceTimerMax) {
+            _self.traceStop();
+        }
+
+
         // AJAX call
         $.ajax({
-            url: "/api/amlight/sdntrace/trace/" + traceId + "?t=CP&q=" + Math.random(),
+            url: "/kytos/sdntrace_cp/trace/" + traceId + "?t=CP&q=" + Math.random(),
             type: 'GET',
             dataType: 'json',
             crossdomain:true
         })
         .done(function(json) {
             /* MOCK JSON RESPONSE */
-            var json_dump = MOCK.JSON_TRACE_CONTROL_PLANE;
-            var jsonobj = $.parseJSON(json_dump);
+            //var json_dump = MOCK.JSON_TRACE_CONTROL_PLANE;
+            //var jsonobj = $.parseJSON(json);
 
-            ajaxDone(jsonobj);
-            console.log('call_trace_listener  ajax done');
+            ajaxDone(json);
+            console.log('SDNTrace Control plane call_trace_listener  ajax done');
         })
         .fail(function() {
-            console.warn("call_trace_listener ajax error" );
+            console.warn("SDNTrace Control plane call_trace_listener ajax error" );
+            _self.traceStop();
         })
         .always(function() {
-            console.log( "call_trace_listener ajax complete" );
+            console.log( "SDNTrace Control plane call_trace_listener ajax complete" );
 
             $('#trace_cp_panel_info .loading-icon-div').hide();
         });
 
+        console.log('_flagCallTraceListenerAgain = ' + _flagCallTraceListenerAgain);
+        if (_flagCallTraceListenerAgain) {
+            _threadTraceListener = setTimeout(_self.callTraceListener, _traceTimerTriggerCall, traceId);
+        }
     };
- }; // SDNTrace Controle plane
+ }; // SDNTrace Control plane
 
 
 
@@ -768,13 +884,16 @@ $(function() {
     $('#layer2_btn').click(function() {
         var jsonStr = sdntrace.buildTraceLayer2JSON();
         sdntrace.callTraceRequestId(jsonStr);
+        sdntracecp.callTraceRequestId(jsonStr);
     });
     $('#layer3_btn').click(function() {
         var jsonStr = sdntrace._build_trace_layer3_json();
         sdntrace.callTraceRequestId(jsonStr);
+        sdntracecp.callTraceRequestId(jsonStr);
     });
     $('#layerfull_btn').click(function() {
         var jsonStr = sdntrace._build_trace_layerfull_json();
         sdntrace.callTraceRequestId(jsonStr);
+        sdntracecp.callTraceRequestId(jsonStr);
     });
 });
