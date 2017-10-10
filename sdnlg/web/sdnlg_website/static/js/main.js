@@ -47,6 +47,7 @@ var isMacAddress = function(str) {
     return res;
 }
 
+var dialogSniffer = '';
 var forcegraph = '';
 var sdntopology = '';
 var sdncolor = '';
@@ -72,10 +73,7 @@ var _initialDataLoad = function() {
 //    // load switches data
 //    // Pass load topology function as a callback
 //    sdntopology.callSdntraceGetSwitches(getSwitchesCallback);
-
-
     sdntopology.callSdntraceGetTopology();
-
 };
 
 
@@ -89,6 +87,8 @@ var _initial_configuration = function() {
         // SDN LG version
         $('#about__version').text(SDNLG_CONF.version);
         $('#about__roadmap').html(SDNLG_CONF.about_roadmap);
+
+        $('#dialogSniffer > iframe').attr("src", SDNLG_CONF.sniffer_dashboard)
     }
 }
 
@@ -135,6 +135,11 @@ var _initial_event_handlers = function() {
             forcegraph.show_topology_colors();
         }
     });
+
+    $('#menu_item_sniffer > a').click(function() {
+        console.log('clicked');
+        dialogSniffer.dialog('open');
+    });
 }
 
 
@@ -142,9 +147,17 @@ var _initial_event_handlers = function() {
 $(function() {
     // Load js configuration data
     _initial_configuration();
+
+    // Initialize Dialog sniffer
+    dialogSniffer = $("#dialogSniffer").dialog({
+      autoOpen: false,
+      width: parseInt($("#dialogSniffer > iframe").attr("width")) + 50,
+      height: parseInt($("#dialogSniffer > iframe").attr("height")) + 50,
+      modal: true,
+    });
+
     // Initialize classes
     sdncolor = new SDNColor();
-
     sdntopology = new SDNTopology();
 
     // Initialize D3 Topology force graph
@@ -155,17 +168,17 @@ $(function() {
         links: []
     };
 
+    // Initialize splitter
     var splitter = $('#splitter__div').height(700).split({
         orientation: 'vertical',
         limit: 10,
         position: '100%', // if there is no percentage it interpret it as pixels
     });
-    
-    _initial_event_handlers()
 
     forcegraph = new ForceGraph(selector,data);
-
     sdnflowtable = new SdnFlowTable();
+
+    _initial_event_handlers()
 
     // initial data load (switch list, topology, colors)
     _initialDataLoad();
